@@ -1,4 +1,5 @@
 # Webphone Client
+built with laravel `8.26.1`
 
 ## Requirements
 - `php >= 7.3`
