@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Webphone;
 use Illuminate\Http\Request;
 
 class WebphoneController extends Controller
@@ -23,7 +24,7 @@ class WebphoneController extends Controller
      */
     public function create()
     {
-        //
+        return view('dashboard.webphones.edit-add');
     }
 
     /**
@@ -34,7 +35,18 @@ class WebphoneController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate(request() , [
+            'name'      => 'required|max:150',
+            'callerId' => 'required|numeric|digits_between:1,20'
+        ]);
+
+        /**validation successfull , create webphone */
+        $webphone = new Webphone;
+        $webphone->name = $request->name;
+        $webphone->callerId = $request->callerId;
+        $webphone->save();
+
+        return redirect()->route('webphones.index');
     }
 
     /**

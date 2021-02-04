@@ -15,6 +15,8 @@ class CreateWebphonesTable extends Migration
     {
         Schema::create('webphones', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('callerId');
             $table->timestamps();
         });
     }
