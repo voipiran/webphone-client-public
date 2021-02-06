@@ -17,6 +17,7 @@ class CreateWebphonesTable extends Migration
             $table->id();
             $table->string('name');
             $table->string('callerId');
+            $table->enum('status' , ['active' , 'inActive' ])->default('active');
             $table->timestamps();
         });
     }

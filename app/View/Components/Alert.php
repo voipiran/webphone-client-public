@@ -12,33 +12,18 @@ class Alert extends Component
      * @return void
      */
 
-
-    /**
-     * the message of alert
-     * @var string
-     */
-    public $message;
-
     /**
      * the type message of alert
      * @var string
      */
     public $type;
-
-    /**
-     * this is just name for testing access
-     *  @var string
-     */
-    public $name = 'Mehdi';
      
     /**
      * Create the component instance
      * @param string $type
-     * @param string $message 
      */
-    public function __construct($message , $type)
+    public function __construct($type)
     {
-        $this->message = $message;
         $this->type    = $type;
     }
 
@@ -52,7 +37,4 @@ class Alert extends Component
         return view('components.alert');
     }
 
-    public function fullName(){
-        return 'Mohammad Mahdi Kargar';
-    }
 }

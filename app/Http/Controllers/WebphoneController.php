@@ -35,15 +35,16 @@ class WebphoneController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate(request() , [
+        $this->validate(request(), [
             'name'      => 'required|max:150',
             'callerId' => 'required|numeric|digits_between:1,20'
         ]);
 
         /**validation successfull , create webphone */
-        $webphone = new Webphone;
-        $webphone->name = $request->name;
+        $webphone           = new Webphone;
+        $webphone->name     = $request->name;
         $webphone->callerId = $request->callerId;
+        $webphone->status   = $request->status;
         $webphone->save();
 
         return redirect()->route('webphones.index');
@@ -68,7 +69,9 @@ class WebphoneController extends Controller
      */
     public function edit($id)
     {
-        //
+        return view('dashboard.webphones.edit-add', [
+            'webphone' => Webphone::findOrFail($id)
+        ]);
     }
 
     /**
@@ -80,7 +83,19 @@ class WebphoneController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $this->validate(request(), [
+            'name'      => 'required|max:150',
+            'callerId' => 'required|numeric|digits_between:1,20'
+        ]);
+
+        /**validation successfull , create webphone */
+        $webphone           = Webphone::findOrFail($id);
+        $webphone->name     = $request->name;
+        $webphone->callerId = $request->callerId;
+        $webphone->status   = $request->status;
+        $webphone->save();
+
+        return redirect()->route('webphones.index');
     }
 
     /**
@@ -91,6 +106,17 @@ class WebphoneController extends Controller
      */
     public function destroy($id)
     {
-        //
+        try {
+            $webphone = Webphone::findOrFail($id);
+            $webphone->delete();
+            return response()->json([
+                'message' => 'Webphone Removed Successfully!' , 
+            ] , 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Failed to remove!' , 
+                'error' => $th->getMessage()
+            ] , 500);
+        }
     }
 }

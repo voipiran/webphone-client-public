@@ -15,6 +15,11 @@
 
         <!-- Scripts -->
         <script src="{{ asset('js/app.js') }}" defer></script>
+
+        {{-- css section  --}}
+        @isset($css)
+            {{$css}}
+        @endisset   
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
@@ -32,5 +37,11 @@
                 {{ $slot }}
             </main>
         </div>
+
+        {{-- javascript section  --}}
+        @isset($javascript)
+            {{$javascript}}
+        @endisset   
+
     </body>
 </html>

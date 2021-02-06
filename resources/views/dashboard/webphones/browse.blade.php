@@ -8,7 +8,7 @@
     </x-slot>
 
     {{-- content --}}
-    <div class="container mx-auto px-4 py-4">
+    <div class="container mx-auto px-4 py-4" id="webphones">
 
         {{-- create new webphone button --}}
         <form action="{{ route('webphones.create') }}" method="GET">
@@ -17,11 +17,19 @@
 
         {{-- show all webphones --}}
         <x-card>
+            {{-- card title  --}}
             <x-slot name="title">
-                Card Title
+                Your Webphones
             </x-slot>
-            card content here
+
+            {{-- content => webphones Grid  --}}
+            <x-webphones.webphone-grid></x-webphones.webphone-grid>
+            
         </x-card>
+
+        <x-slot name="javascript">
+            <script src="{{asset('js/webphones/browse.js')}}"></script>
+        </x-slot>
 
     </div>
 </x-app-layout>

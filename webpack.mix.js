@@ -16,3 +16,6 @@ mix.js('resources/js/app.js', 'public/js').postCss('resources/css/app.css', 'pub
     require('tailwindcss'),
     require('autoprefixer'),
 ]);
+
+mix.js('resources/js/webphones/edit-add.js' , 'public/js/webphones').vue();
+mix.js('resources/js/webphones/browse.js' , 'public/js/webphones').vue();
