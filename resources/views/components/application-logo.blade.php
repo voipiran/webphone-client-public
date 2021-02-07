@@ -3,5 +3,5 @@
 </svg> --}}
 
 <div class="bg-pink-600 px-5 py-2 rounded-sm">
-     <img src="{{asset('img/logo.png')}}">
+     <img src="{{asset('images/logo.png')}}">
 </div>

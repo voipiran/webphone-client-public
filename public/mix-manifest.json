@@ -2,5 +2,6 @@
     "/js/app.js": "/js/app.js",
     "/js/webphones/edit-add.js": "/js/webphones/edit-add.js",
     "/js/webphones/browse.js": "/js/webphones/browse.js",
+    "/js/index.js": "/js/index.js",
     "/css/app.css": "/css/app.css"
 }

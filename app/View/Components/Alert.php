@@ -17,7 +17,12 @@ class Alert extends Component
      * @var string
      */
     public $type;
-     
+
+    /**
+     * the color of alert
+     */
+    public $color;
+    
     /**
      * Create the component instance
      * @param string $type
@@ -25,6 +30,17 @@ class Alert extends Component
     public function __construct($type)
     {
         $this->type    = $type;
+        switch ($type) {
+            case 'success':
+                $this->color = 'green';
+                break;
+            case 'warning':
+                $this->color = 'yellow';
+                break;
+            case 'danger':
+                $this->color = 'red';
+                break;
+        }
     }
 
     /**
@@ -36,5 +52,4 @@ class Alert extends Component
     {
         return view('components.alert');
     }
-
 }

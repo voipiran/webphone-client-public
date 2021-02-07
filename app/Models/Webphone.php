@@ -8,4 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Webphone extends Model
 {
     use HasFactory;
+
+    public function scopeActive($query){
+        return $query->where('status' , 'active');
+    }
 }

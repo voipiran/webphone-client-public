@@ -19,3 +19,4 @@ mix.js('resources/js/app.js', 'public/js').postCss('resources/css/app.css', 'pub
 
 mix.js('resources/js/webphones/edit-add.js' , 'public/js/webphones').vue();
 mix.js('resources/js/webphones/browse.js' , 'public/js/webphones').vue();
+mix.js('resources/js/index.js' , 'public/js').vue();
