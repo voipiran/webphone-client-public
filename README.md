@@ -1,5 +1,6 @@
 # Webphone Client
 built with laravel `8.26.1`
+registration is closed temporary
 
 ## Requirements
 - `php >= 7.3`
@@ -8,5 +9,5 @@ built with laravel `8.26.1`
 - clone repository
 - cp .env.example .env
 - config database in `.env` 
-- `php artisan migrate`
+- `php artisan migrate --seed`
 - `php artisan serve`

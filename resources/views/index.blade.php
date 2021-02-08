@@ -118,6 +118,14 @@
                 </div>
                 {{-- call buttons here  --}}
                 <div class="grid grid-cols-1 md:grid-cols-{{ (count($webphones) > 3 ) ? 3 : count($webphones) }} gap-4 justify-center mx-auto max-w-md">
+
+                    {{-- no webphones exists  --}}
+                    @if(!count($webphones))
+                        <x-alert type="default">
+                            No Webphones Defined Yet!
+                        </x-alert>
+                    @endif
+
                     @foreach ($webphones as $webphone)
                     <div class="row btn-container">
                         <button class="btn-call" :disabled="status.showAnimate" v-on:click="dial('{{$webphone->callerId}}' , '{{$webphone->name}}')" >
