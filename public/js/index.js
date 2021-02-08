@@ -9,19 +9,1621 @@
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm.js");
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm.js");
 /* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! sweetalert2 */ "./node_modules/sweetalert2/dist/sweetalert2.all.js");
 /* harmony import */ var sweetalert2__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(sweetalert2__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var vue_spinner_src_BeatLoader_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! vue-spinner/src/BeatLoader.vue */ "./node_modules/vue-spinner/src/BeatLoader.vue");
+
+/**sweet alert  */
 
 
-var index = new vue__WEBPACK_IMPORTED_MODULE_1__.default({
+/** spinner for loading stuff */
+
+
+/**the number will call  */
+
+var voipiran_sid;
+var vm = new vue__WEBPACK_IMPORTED_MODULE_2__.default({
   el: '#index',
+  data: {
+    status: {
+      show: false,
+
+      /** to not show the first animation we have to not show the div */
+      showAnimate: false,
+      spinnerColor: 'white',
+      spinnerSize: '7px',
+      description: null,
+
+      /** like 'calling to administrator...' */
+      spinnerLoading: true,
+      spekingTime: null
+    },
+    name: null
+  },
   methods: {
-    doSome: function doSome() {
-      sweetalert2__WEBPACK_IMPORTED_MODULE_0___default().fire('', 'erorr accured', 'error');
+    dial: function dial(dialTo, name) {
+      /**
+       * we are handling of showing status with status.showAnimate
+       * so we have to showStatus anyway
+       */
+      this.spinnerLoading = true;
+      this.status.description = 'Wait , we are making call with ' + name;
+      this.status.show = true;
+      this.status.showAnimate = this.status.showAnimate ? false : true;
+      this.name = name;
+      voipiran_sid = dialTo;
+      /** 
+       * make the call 
+       * the dialButton will make the call
+       * */
+
+      dialButton();
+    },
+    endCall: function endCall() {
+      this.status.description = 'Ready to call';
+      vm.$data.status.showAnimate = false;
+      hangupCall();
+      this.status.showAnimate = false;
     }
+  },
+  components: {
+    BeatLoader: vue_spinner_src_BeatLoader_vue__WEBPACK_IMPORTED_MODULE_1__.default
   }
 });
+/** webpone codes here */
+
+/* =================== VoipIran ===================== --> */
+
+var voipIranRegiterButton = document.getElementById("register");
+var voipIranUnRegiterButton = document.getElementById("unregister");
+var voipIranRegStatus = document.getElementById("reg_status");
+var voipIranDialCall = document.getElementById("dial");
+var translated_message; // let voipIranBtnToggle = parent.document.getElementById("btnToggle");
+// let voipIranVici = parent.document.getElementById("vici");
+
+/* =================== VoipIran ===================== --> */
+
+var debug = debug_enabled; // Array of the various UI elements
+
+var uiElements = {
+  container: document.getElementById("container"),
+  main: document.getElementById("main"),
+  audio: document.getElementById("audio"),
+  logo: document.getElementById("logo"),
+  controls: document.getElementById("controls"),
+  registration_control: document.getElementById("registration_control"),
+  reg_status: document.getElementById("reg_status"),
+  register: document.getElementById("register"),
+  unregister: document.getElementById("unregister"),
+  dial_control: document.getElementById("dial_control"),
+  digits: document.getElementById("digits"),
+  dial: document.getElementById("dial"),
+  audio_control: document.getElementById("audio_control"),
+  mic_mute: document.getElementById("mic_mute"),
+  vol_up: document.getElementById("vol_up"),
+  vol_down: document.getElementById("vol_down"),
+  dialpad: document.getElementById("dialpad"),
+  one: document.getElementById("one"),
+  two: document.getElementById("two"),
+  three: document.getElementById("three"),
+  four: document.getElementById("four"),
+  five: document.getElementById("five"),
+  six: document.getElementById("six"),
+  seven: document.getElementById("seven"),
+  eight: document.getElementById("eight"),
+  nine: document.getElementById("nine"),
+  star: document.getElementById("star"),
+  zero: document.getElementById("zero"),
+  pound: document.getElementById("pound"),
+  dial_dtmf: document.getElementById("dial_dtmf"),
+  dtmf_digits: document.getElementById("dtmf_digits"),
+  send_dtmf: document.getElementById("send_dtmf"),
+  debug: document.getElementById("debug"),
+  reg_icon: document.getElementById("reg_icon"),
+  unreg_icon: document.getElementById("unreg_icon"),
+  dial_icon: document.getElementById("dial_icon"),
+  hangup_icon: document.getElementById("hangup_icon"),
+  mute_icon: document.getElementById("mute_icon"),
+  vol_up_icon: document.getElementById("vol_up_icon"),
+  vol_down_icon: document.getElementById("vol_down_icon"),
+  // --- add hangoutButton VOIPIRAN  -------
+  hangoutButton: document.getElementById("hangoutButton"),
+  // --- add Single callButton VOIPIRAN  -------
+  btn_call: document.getElementById("btn_call"),
+  // --- Speaking Label VOIPIRAN  -------
+  speaking: document.getElementById("speaking")
+};
+var ua;
+var my_session = false;
+var incall = false;
+var ringing = false;
+var muted = false;
+var caller = "";
+var mediaStream;
+var mediaConstraints;
+var ua_config = {
+  userAgentString: "VOIPIRAN WEBPHONE",
+  displayName: cid_name,
+  uri: sip_uri,
+  hackIpInContact: true,
+  hackViaTcp: true,
+  hackWssInTransport: true,
+  authorizationUser: auth_user,
+  password: password,
+  log: {
+    builtinEnabled: true,
+    level: "debug"
+  },
+  transportOptions: {
+    traceSip: true,
+    wsServers: ws_server,
+    userAgentString: "VOIPIRAN WEBPHONE"
+  },
+  autostart: true
+}; // We define initial status
+
+uiElements.reg_status.value = get_translation("unregistered");
+debug_out("<br />displayName: " + cid_name + "<br />uri: " + sip_uri + "<br />authorizationUser: " + auth_user + "<br />password: " + password + "<br />wsServers: " + ws_server);
+var sip_server = ua_config.uri.replace(/^.*@/, ""); // setup the ringing audio file
+
+var ringAudio = new Audio("sounds/ringing.mp3");
+var endAudio = new Audio("sounds/endRinging.mp3");
+ringAudio.addEventListener("ended", function () {
+  this.currentTime = 0;
+  this.play();
+}, false); // setup the dtmf tone audio files
+
+var dtmf0Audio = new Audio("sounds/0.wav");
+var dtmf1Audio = new Audio("sounds/1.wav");
+var dtmf2Audio = new Audio("sounds/2.wav");
+var dtmf3Audio = new Audio("sounds/3.wav");
+var dtmf4Audio = new Audio("sounds/4.wav");
+var dtmf5Audio = new Audio("sounds/5.wav");
+var dtmf6Audio = new Audio("sounds/6.wav");
+var dtmf7Audio = new Audio("sounds/7.wav");
+var dtmf8Audio = new Audio("sounds/8.wav");
+var dtmf9Audio = new Audio("sounds/9.wav");
+var dtmfHashAudio = new Audio("sounds/hash.wav");
+var dtmfStarAudio = new Audio("sounds/star.wav"); // adjust the dtmf tone volume
+
+dtmf0Audio.volume = dtmf1Audio.volume = dtmf2Audio.volume = dtmf3Audio.volume = dtmf4Audio.volume = dtmf5Audio.volume = dtmf6Audio.volume = dtmf7Audio.volume = dtmf8Audio.volume = dtmf9Audio.volume = dtmfHashAudio.volume = dtmfStarAudio.volume = 0.15;
+processDisplaySettings();
+initialize();
+/************************************
+
+  Beginning of functions
+
+*************************************/
+
+function debug_out(string) {
+  // check if debug is enabled. If it isn't, end without doing anything
+  if (!debug) return false; // format the date string
+
+  var date;
+  date = new Date();
+  date = date.getFullYear() + "-" + ("00" + (date.getMonth() + 1)).slice(-2) + "-" + ("00" + date.getDate()).slice(-2) + " " + ("00" + date.getHours()).slice(-2) + ":" + ("00" + date.getMinutes()).slice(-2) + ":" + ("00" + date.getSeconds()).slice(-2); // add the debug string to the debug element
+
+  uiElements.debug.innerHTML = uiElements.debug.innerHTML + date + " => " + string + "<br>";
+}
+
+function startBlink() {
+  var type = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "inComingCall";
+
+  if (type == "outGoingCall") {
+    // voipIranDialCall.style.background = "#ff0000";
+    // voipIranRegiterButton.classList.add("alertCallOutGoing");
+    // voipIranRegStatus.classList.add("alertCallOutGoing");
+    // voipIranBtnToggle.classList.add("alertCallOutGoing");
+    // voipIranVici.classList.add("alertCallOutGoing");
+    return;
+  }
+
+  notifyMe(); // uiElements.reg_status.style.backgroundImage = "url('images/reg_status_blink.gif')";
+
+  voipIranRegiterButton.classList.add("alertCall");
+  voipIranRegStatus.classList.add("alertCall"); // voipIranBtnToggle.classList.add("alertCall");
+  // voipIranVici.classList.add("alertCall");
+
+  voipIranDialCall.style.background = "green";
+}
+
+function stopBlink() {
+  uiElements.reg_status.style.backgroundImage = "";
+  voipIranRegiterButton.classList.remove("alertCall");
+  voipIranRegStatus.classList.remove("alertCall"); // voipIranBtnToggle.classList.remove("alertCall");
+  // voipIranVici.classList.remove("alertCall");
+  // if hangup  outgoingCall
+
+  voipIranRegiterButton.classList.remove("alertCallOutGoing");
+  voipIranRegStatus.classList.remove("alertCallOutGoing"); // voipIranBtnToggle.classList.remove("alertCallOutGoing");
+  // voipIranVici.classList.remove("alertCallOutGoing");
+  // voipIranDialCall.style.background = '#434552';
+}
+
+function dialPadPressed(digit, my_session) {
+  // only work if the dialpad is not hidden
+  if (hide_dialpad) return false;
+
+  switch (digit) {
+    case "0":
+      dtmf0Audio.play();
+      break;
+
+    case "1":
+      dtmf1Audio.play();
+      break;
+
+    case "2":
+      dtmf2Audio.play();
+      break;
+
+    case "3":
+      dtmf3Audio.play();
+      break;
+
+    case "4":
+      dtmf4Audio.play();
+      break;
+
+    case "5":
+      dtmf5Audio.play();
+      break;
+
+    case "6":
+      dtmf6Audio.play();
+      break;
+
+    case "7":
+      dtmf7Audio.play();
+      break;
+
+    case "8":
+      dtmf8Audio.play();
+      break;
+
+    case "9":
+      dtmf9Audio.play();
+      break;
+
+    case "*":
+      dtmfStarAudio.play();
+      break;
+
+    case "#":
+      dtmfHashAudio.play();
+      break;
+  } // check if the my_session is not there
+
+
+  if (my_session == false) {
+    debug_out("Adding key press " + digit + " to dial digits");
+    uiElements.digits.value = uiElements.digits.value + digit;
+  } else {
+    debug_out("Sending DTMF " + digit);
+    my_session.dtmf(digit);
+  }
+}
+
+function sendButton(my_session) {
+  // only work if the dialpad is not hidden
+  if (hide_dialpad) return false; // check if the my_session is not there
+
+  if (my_session == false) {// TODO give some type of error
+  } else {
+    var digits = uiElements.dtmf_digits.value;
+    debug_out("Sending DTMF " + digits);
+    my_session.dtmf(digits); // ========= VOIPIRAN TRANSFER =====================
+
+    my_session.refer(digits); // ========= VOIPIRAN TRANSFER =====================
+
+    uiElements.dtmf_digits.value = "";
+  }
+}
+
+function registerButton(ua) {
+  debug_out("Register Button Pressed");
+  ua.register();
+}
+
+function unregisterButton(ua) {
+  debug_out("Un-Register Button Pressed");
+  ua.unregister();
+} // VOIPIRAN HangoutButton Press
+
+
+function voipiranHangupCall() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+  debug_out("Hangup Button Pressed");
+  uiElements.dial_icon.src = "images/wp_dial.gif";
+  voipIranDialCall.style.background = "green";
+  uiElements.reg_status.value = get_translation("registered");
+  uiElements.digits.value = "";
+  setRinging(false);
+  setCallButtonStatus(false);
+  hangupCall();
+
+  if (!state) {
+    my_session.reject();
+  }
+
+  my_session = false;
+  Toast.fire({
+    text: "Call Disconnected!",
+    icon: "success",
+    timer: 1500,
+    showConfirmButton: false
+  });
+  return false;
+}
+
+function dialButton() {
+  uiElements.digits.value = voipiran_sid; // check if in a call
+
+  if (incall) {
+    // we are so they hung up the call
+    debug_out("Hangup Button Pressed"); //=======  VOIPIRAN Start set background dial button green ==========
+
+    uiElements.dial_icon.src = "images/wp_dial.gif";
+    voipIranDialCall.style.background = "green"; //=======  VOIPIRAN End set background dial button green ==========
+
+    setCallButtonStatus(false);
+    hangupCall();
+    return false;
+  } // we are not in a call
+
+
+  setCallButtonStatus(true); // check if ringing
+
+  if (ringing) {
+    // we are ringing
+    // stop the ringing
+    // ==================== Voipiran =====================
+    voipIranDialCall.style.background = "#ff0000"; // ==================== Voipiran =====================
+
+    setRinging(false);
+    incall = true;
+    debug_out("Answered Call"); //=======  VOIPIRAN Start set background dial button red ==========
+
+    voipIranDialCall.style.background = "#ff0000"; //=======  VOIPIRAN End set background dial button red ==========
+
+    var modifierArray = [SIP.Web.Modifiers.addMidLines];
+    options = {
+      sessionDescriptionHandlerOptions: {
+        constraints: {
+          audio: true,
+          video: false
+        },
+        modifiers: [SIP.Web.Modifiers.addMidLines]
+      }
+    };
+    my_session.accept(options, modifierArray);
+  } else {
+    // not in a call and the phone is not ringing
+    debug_out("Dial Button Pressed"); // made sure the dial box is not hidden
+
+    if (!hide_dialbox) {
+      // =============== VOIPIRAN  - Start Check filled number input =====================
+      if (!uiElements.digits.value) {
+        Toast.fire("", "Enter Phone Number...", "error");
+        return;
+      } // =============== VOIPIRAN  - END Check filled number input =====================
+
+
+      uiElements.dial_icon.src = "images/wp_hangup.gif"; //=======  VOIPIRAN Start set background dial button red ==========
+
+      voipIranDialCall.style.background = "#ff0000"; //=======  VOIPIRAN End set background dial button red ==========
+
+      dialNumber();
+    }
+  }
+}
+
+function muteButton() {
+  // only work if the button is not hidden
+  if (hide_mute) return false; // check if in a call
+
+  if (incall) {
+    if (muted) {
+      // call is currently muted
+      // unmute it
+      muted = false;
+      debug_out("Un-Mute Button Pressed");
+      uiElements.mute_icon.src = "images/wp_mic_on.gif";
+    } else {
+      // call is not muted
+      // mute it
+      muted = true;
+      debug_out("Mute Button Pressed");
+      uiElements.mute_icon.src = "images/wp_mic_off.gif";
+    } // find all the tracks and toggle them.
+
+
+    var pc = my_session.sessionDescriptionHandler.peerConnection;
+
+    if (pc.getSenders) {
+      pc.getSenders().forEach(function (sender) {
+        if (sender.track) {
+          sender.track.enabled = !muted;
+        }
+      });
+    } else {
+      pc.getLocalStreams().forEach(function (stream) {
+        stream.getAudioTracks().forEach(function (track) {
+          track.enabled = !muted;
+        });
+        stream.getVideoTracks().forEach(function (track) {
+          track.enabled = !muted;
+        });
+      });
+    }
+  } else {
+    debug_out("Mute Button Pressed But Not In Call");
+    uiElements.mute_icon.src = "images/wp_mic_on.gif";
+    muted = false;
+  }
+}
+
+function volumeUpButton() {
+  // only work if the volume buttons are not hidden
+  if (hide_volume) return false;
+  setVolume(0.1);
+  debug_out("Volume Up Button Pressed");
+}
+
+function volumeDownButton() {
+  // only work if the volume buttons are not hidden
+  if (hide_volume) return false;
+  setVolume(-0.1);
+  debug_out("Volume Down Button Pressed");
+}
+
+function setVolume(inc) {
+  volume = uiElements.audio.volume;
+  debug_out("Current Volume = " + Math.round(volume * 100) + "%");
+
+  if (volume + inc < 0) {
+    debug_out("Volume is already 0");
+    return;
+  } else if (volume + inc > 1) {
+    debug_out("Volume is already maxed");
+    return;
+  } else volume = volume + inc;
+
+  if (volume < 0) {
+    volume = 0;
+  }
+
+  if (volume > 1) {
+    volume = 1;
+  }
+
+  debug_out("New Volume = " + Math.round(volume * 100) + "%");
+  uiElements.audio.volume = volume;
+}
+
+function hangupCall() {
+  // check if in a call
+  if (!incall) {
+    // =========================== VoipIran ===============================
+    // voipIranDialCall.style.background = "#4c4f56";
+    stopTimer(intervalId);
+    stopBlink(); // =========================== VoipIran ===============================
+
+    debug_out("Attempt to hang up non-existant call");
+    return false;
+  }
+
+  my_session.terminate();
+  my_session = false;
+  incall = false; // -------------------- VOIPIRAN --------------------
+
+  endAudio.pause();
+  endAudio.currentTime = 0; // -------------------- VOIPIRAN --------------------
+
+  ringAudio.pause();
+  ringAudio.currentTime = 0;
+
+  if (ua.isRegistered()) {
+    setRegisterStatus("registered");
+    setCallButtonStatus(false);
+    /* =================== VoipIran ===================== --> */
+
+    voipIranUnRegiterButton.style.display = "none";
+    voipIranRegiterButton.style.display = "block";
+    /* =================== VoipIran ===================== --> */
+
+    uiElements.unreg_icon.src = "images/wp_unregister_inactive.gif";
+    uiElements.dial_icon.src = "images/wp_dial.gif"; //=======  VOIPIRAN Start set background dial button green ==========
+
+    voipIranDialCall.style.background = "green"; //=======  VOIPIRAN End set background dial button green ==========
+  } else {
+    setRegisterStatus("unregistered");
+    /* =================== VoipIran ===================== --> */
+
+    voipIranRegiterButton.style.display = "none";
+    /* =================== VoipIran ===================== --> */
+
+    uiElements.dial_icon.src = "images/wp_dial.gif"; //=======  VOIPIRAN Start set background dial button green ==========
+
+    voipIranDialCall.style.background = "green"; //=======  VOIPIRAN End set background dial button green ==========
+
+    setCallButtonStatus(true);
+  }
+}
+
+function dialNumber() {
+  uiElements.digits.value = voipiran_sid; // check if currently in a call
+
+  if (incall) {
+    debug_out("Already in a call");
+    return false;
+  }
+
+  var uri = voipiran_sid + "@" + sip_server;
+  var modifierArray = [SIP.Web.Modifiers.addMidLines];
+  var options = {
+    sessionDescriptionHandlerOptions: {
+      constraints: {
+        audio: true,
+        video: false
+      }
+    }
+  };
+  my_session = ua.invite(uri, options, modifierArray);
+  incall = true; // VOIPIRAN get_translation("attempting") + " - " + uiElements.digits.value) to get_translation("attempting") + " " + uiElements.digits.value)
+
+  setRegisterStatus(get_translation("attempting") + " " + uiElements.digits.value);
+  setCallButtonStatus(true); // ---------- VOIPIRAN dial Number ------------
+  // caller = uiElements.digits.value;
+
+  caller = voipiran_sid; // ---------- VOIPIRAN dial Number ------------
+  // assign event handlers to the session
+
+  my_session.on("accepted", function () {
+    vm.$data.status.description = 'Incall with ' + vm.$data.name;
+    handleAccepted();
+  });
+  my_session.on("bye", function (request) {
+    vm.$data.status.description = 'Ready to call';
+    vm.$data.status.showAnimate = false;
+    handleBye(request);
+  });
+  my_session.on("failed", function (response, cause) {
+    vm.$data.status.description = 'Ready to call';
+    vm.$data.status.showAnimate = false;
+
+    if (cause == 'WebRTC Error') {
+      handleFailed(response, 'Canceled');
+      Toast.fire({
+        text: 'Canceled!',
+        timer: 1500,
+        icon: 'info',
+        showConfirmButton: false
+      });
+      return;
+    }
+
+    handleFailed(response, cause);
+  });
+  my_session.on("refer", function () {
+    vm.$data.status.description = 'Ready to call';
+    vm.$data.status.showAnimate = false;
+    handleInboundRefer();
+  });
+  my_session.on("progress", function (progress) {
+    vm.$data.status.description = vm.$data.name + ' Ringing';
+    handleProgress(progress);
+  }); // uiElements.digits.value = "";
+}
+
+function setCallButtonStatus(status) {
+  if (status) {
+    uiElements.dial.setAttribute("class", "button hangup");
+    uiElements.dial_icon.src = "images/wp_hangup.gif";
+  } else {
+    uiElements.dial.setAttribute("class", "button dial");
+    uiElements.dial_icon.src = "images/wp_dial.gif";
+  }
+}
+
+function handleProgress(progress) {
+  debug_out("Their end is ringing - " + progress); // VOIPIRAN remove - before caller --- (get_translation("ringing") + " - " + caller) to (get_translation("ringing") + " " + caller)
+
+  setRegisterStatus(get_translation("ringing") + " " + caller); //======================== VOIPIRAN change endRinging =======================
+  // ringAudio.play();
+
+  endAudio.play(); //======================== VOIPIRAN change endRinging =======================
+  // start ringing
+
+  setRinging(true); // ------- VOIPIRAN Start SET background red when ringing ------------
+
+  uiElements.dial_icon.src = "images/wp_hangup.gif";
+  voipIranDialCall.style.background = "#ff0000";
+  startBlink("outGoingCall"); // ------- VOIPIRAN End SET background red when ringing ------------
+}
+
+function handleInvite(my_session) {
+  // check if we are in a call already
+  if (incall) {
+    // we are so reject it
+    debug_out("Received INVITE while in a call. Rejecting.");
+    var options = {
+      statusCode: 486,
+      reasonPhrase: "Busy Here"
+    };
+    my_session.reject(options);
+  } else {
+    // we are not so good to process it
+    // add session event listeners
+    my_session.on("accepted", function () {
+      // don't show disconnect call anymore
+      uiElements.hangoutButton.style.display = "none";
+      handleAccepted();
+    });
+    my_session.on("bye", function (request) {
+      // don't show disconnect call anymore
+      uiElements.hangoutButton.style.display = "none";
+      handleBye(request);
+    });
+    my_session.on("failed", function (response, cause) {
+      // don't show disconnect call anymore
+      uiElements.hangoutButton.style.display = "none";
+      handleFailed(response, cause);
+    });
+    my_session.on("refer", function () {
+      // don't show disconnect call anymore
+      uiElements.hangoutButton.style.display = "none";
+      handleInboundRefer();
+    });
+    my_session.on("trackAdded", function () {
+      // don't show disconnect call anymore
+      uiElements.hangoutButton.style.display = "none";
+      handleTrackAdded(my_session);
+    });
+    var remoteUri = my_session.remoteIdentity.uri.toString();
+    var displayName = my_session.remoteIdentity.displayName;
+    var regEx1 = /sip:/;
+    var regEx2 = /@.*$/;
+    var extension = remoteUri.replace(regEx1, "");
+    extension = extension.replace(regEx2, "");
+    caller = extension;
+    debug_out("Got Invite from <" + extension + '> "' + displayName + '"'); // ------------- VOIPIRAN Start Change Status ---------------
+    // uiElements.reg_status.value = extension + " - " + displayName;
+
+    uiElements.digits.value = extension + "  " + displayName;
+    uiElements.reg_status.value = "Calling From"; // show disconnect button when ringing
+
+    uiElements.hangoutButton.style.display = "inline-block"; // ------------- VOIPIRAN End Change Status ---------------
+    // if auto answer is set answer the call
+
+    if (auto_answer) {
+      incall = true;
+      debug_out("Auto-Answered Call"); //=======  VOIPIRAN Start set background dial button red ==========
+
+      voipIranDialCall.style.background = "#ff0000"; //=======  VOIPIRAN End set background dial button red ==========
+
+      var modifierArray = [SIP.Web.Modifiers.addMidLines];
+      options = {
+        sessionDescriptionHandlerOptions: {
+          constraints: {
+            audio: true,
+            video: false
+          }
+        }
+      };
+      my_session.accept(options, modifierArray);
+      setCallButtonStatus(true);
+    } else {
+      // auto answer not enabled
+      // ring the phone
+      setRinging(true);
+    }
+  }
+
+  return my_session;
+}
+
+function handleTrackAdded(my_session) {
+  // We need to check the peer connection to determine which track was added
+  var pc = my_session.sessionDescriptionHandler.peerConnection; // Gets remote tracks
+
+  var remoteStream = new MediaStream();
+  pc.getReceivers().forEach(function (receiver) {
+    remoteStream.addTrack(receiver.track);
+  });
+  uiElements.audio.srcObject = remoteStream;
+  uiElements.audio.play();
+}
+
+function handleAccepted() {
+  debug_out("Session Accepted Event Fired"); // ====================== VOIPIRAN Start Timer =========================
+
+  startTimer(); // ====================== VOIPIRAN Start Timer =========================
+  // =============== VOIPIRAN pause endRinging ====================
+  // --------------- VOIPIRAN CHANGE LABEL ---------------------
+  // uiElements.reg_status.value = get_translation("incall") + " - " + caller;
+  // uiElements.reg_status.value = get_translation("incall") + " - " + caller;
+  // --------------- VOIPIRAN CHANGE LABEL ---------------------
+
+  endAudio.pause();
+  endAudio.currentTime = 0; // =============== VOIPIRAN pause endRinging ====================
+  // They answered stop ringing
+
+  setRinging(false);
+}
+
+function handleBye(request) {
+  debug_out("Session Bye Event Fired |" + request); // ================= VOIPIRAN STOP TIMER ===================
+
+  stopTimer(intervalId); // ================= VOIPIRAN STOP TIMER ===================
+
+  if (ua.isRegistered()) {
+    setRegisterStatus("registered");
+  } else {
+    setRegisterStatus("unregistered");
+  }
+
+  setCallButtonStatus(false);
+  my_session = false;
+  incall = false;
+} // VOIPIRAN , there two handleFailed Function , one of them Removed , the last on that executing stayed
+
+
+function handleFailed(response, cause) {
+  debug_out("Session Failed Event Fired | " + response + " | " + cause); // check if we are registered and adjust the display accordingly
+
+  if (cause == "WebRTC Error" || cause == "WebRTC not supported" || cause == "Canceled") {
+    setRinging(false);
+
+    if (ua.isRegistered()) {
+      setRegisterStatus("registered");
+    } else {
+      setRegisterStatus("unregistered");
+    }
+
+    my_session = false;
+    setCallButtonStatus(false);
+    my_session = false;
+    incall = false;
+
+    if (cause == "WebRTC Error" || cause == "WebRTC not supported") {
+      WebRTCError();
+    }
+  } // ------------- VOIPIRAN SET BUSY STATE -----------
+
+
+  if (cause == "Busy") {
+    voipiranHangupCall("busy");
+    Toast.fire("", "Line Busy", "info");
+  }
+}
+
+function setRegisterStatus(message) {
+  if (message == "registered" || message == "connected") {
+    uiElements.reg_icon.src = "images/wp_register_active.gif";
+    uiElements.unreg_icon.src = "images/wp_unregister_inactive.gif";
+    translated_message = get_translation(message);
+  } else if (message == "unregistered" || message == "disconnected" || message == "register_failed") {
+    uiElements.reg_icon.src = "images/wp_register_inactive.gif";
+    uiElements.unreg_icon.src = "images/wp_unregister_active.gif";
+    translated_message = get_translation(message);
+  } else {
+    translated_message = message;
+  }
+
+  if (uiElements.reg_status.type == "text") uiElements.reg_status.value = translated_message;else uiElements.reg_status.innerHTML = translated_message;
+}
+
+function handleInboundRefer() {
+  debug_out("Session Refer Event Fired");
+}
+
+function WebRTCError() {
+  Toast.fire('Error!', get_translation("webrtc_error"), 'error');
+}
+
+function initialize() {
+  // Initialization
+  // Dial pad keys
+  uiElements.one.addEventListener("click", function () {
+    dialPadPressed("1", my_session);
+  });
+  uiElements.two.addEventListener("click", function () {
+    dialPadPressed("2", my_session);
+  });
+  uiElements.three.addEventListener("click", function () {
+    dialPadPressed("3", my_session);
+  });
+  uiElements.four.addEventListener("click", function () {
+    dialPadPressed("4", my_session);
+  });
+  uiElements.five.addEventListener("click", function () {
+    dialPadPressed("5", my_session);
+  });
+  uiElements.six.addEventListener("click", function () {
+    dialPadPressed("6", my_session);
+  });
+  uiElements.seven.addEventListener("click", function () {
+    dialPadPressed("7", my_session);
+  });
+  uiElements.eight.addEventListener("click", function () {
+    dialPadPressed("8", my_session);
+  });
+  uiElements.nine.addEventListener("click", function () {
+    dialPadPressed("9", my_session);
+  });
+  uiElements.zero.addEventListener("click", function () {
+    dialPadPressed("0", my_session);
+  });
+  uiElements.star.addEventListener("click", function () {
+    dialPadPressed("*", my_session);
+  });
+  uiElements.pound.addEventListener("click", function () {
+    dialPadPressed("#", my_session);
+  }); // Send DTMF button
+
+  uiElements.send_dtmf.addEventListener("click", function () {
+    sendButton(my_session);
+  }); // Dial Button
+
+  uiElements.dial.addEventListener("click", function () {
+    dialButton();
+  }); // Mute	 Button
+
+  uiElements.mic_mute.addEventListener("click", function () {
+    muteButton();
+  }); // Volume Buttons
+
+  uiElements.vol_up.addEventListener("click", function () {
+    volumeUpButton();
+  });
+  uiElements.vol_down.addEventListener("click", function () {
+    volumeDownButton();
+  }); // Register Button
+
+  uiElements.register.addEventListener("click", function () {
+    registerButton(ua);
+  }); // Unregister Button
+
+  uiElements.unregister.addEventListener("click", function () {
+    unregisterButton(ua);
+  }); // Change text language for some elements
+
+  uiElements.send_dtmf.innerHTML = get_translation("send");
+  uiElements.reg_status.value = get_translation("connecting"); // create the User Agent
+
+  ua = new SIP.UA(ua_config); // assign event handlers
+
+  ua.on("connected", function () {
+    setRegisterStatus("connected");
+    /* =================== VoipIran ===================== --> */
+
+    voipIranRegiterButton.style.display = "none";
+    /* =================== VoipIran ===================== --> */
+  });
+  ua.on("registered", function () {
+    setRegisterStatus("registered");
+    /* =================== VoipIran ===================== --> */
+
+    voipIranUnRegiterButton.style.display = "none";
+    voipIranRegiterButton.style.display = "block";
+    /* =================== VoipIran ===================== --> */
+    // If auto dial out is enabled and a dial_number is given, do the auto dialing
+
+    if (auto_dial_out && uiElements.digits.value.length > 0) {
+      dialButton();
+    } //added By ViciExperts to automatically login agent as soon as the webphone is loaded.
+
+
+    if (auto_login) {
+      try {
+        parent.NoneInSessionCalL("LOGIN");
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  });
+  ua.on("unregistered", function () {
+    setRegisterStatus("unregistered");
+    /* =================== VoipIran ===================== --> */
+
+    voipIranRegiterButton.style.display = "none";
+    /* =================== VoipIran ===================== --> */
+  });
+  ua.on("disconnected", function () {
+    setRegisterStatus("disconnected");
+  });
+  ua.on("registrationFailed", function () {
+    setRegisterStatus("register_failed");
+    /* =================== VoipIran ===================== --> */
+
+    voipIranRegiterButton.style.display = "none";
+    /* =================== VoipIran ===================== --> */
+  });
+  ua.on("invite", function (session) {
+    my_session = handleInvite(session);
+  });
+}
+
+function getUserMediaSuccess(stream) {
+  console.log("getUserMedia succeeded", stream);
+  mediaStream = stream;
+}
+
+function getUserMediaFailure(e) {
+  console.error("getUserMedia failed:", e);
+}
+
+function processDisplaySettings() {
+  if (hide_dialpad) {
+    uiElements.dialpad.setAttribute("hidden", true);
+  }
+
+  if (hide_dialbox) {
+    uiElements.digits.setAttribute("hidden", true);
+  }
+
+  if (hide_mute) {
+    uiElements.mic_mute.setAttribute("hidden", true);
+  }
+
+  if (hide_volume) {
+    uiElements.vol_down.setAttribute("hidden", true);
+    uiElements.vol_up.setAttribute("hidden", true);
+  }
+}
+
+function setRinging(ringing_status) {
+  if (ringing_status) {
+    ringing = true;
+    startBlink();
+    ringAudio.play();
+  } else {
+    ringing = false;
+    stopBlink();
+    ringAudio.pause();
+    ringAudio.currentTime = 0;
+  }
+}
+/*
+	Hardcoded messages. Can be translated by loading translations.js
+*/
+
+
+function get_translation(text) {
+  console.log("-------------------- get translation ---------------------"); // Default language. This can be overriden by defining the 'language' variable before loading this file
+
+  if (typeof language == "undefined" || language.length == 0) language = "en";
+
+  if (typeof vici_translations == "undefined") {
+    vici_translations = {
+      en: {
+        registered: "Ready to Dial",
+        unregistered: "Unregistered",
+        connecting: "Connecting...",
+        disconnected: "Disconnected",
+        connected: "Connected",
+        register_failed: "Reg. failed",
+        incall: "Incall",
+        ringing: "Ringing",
+        attempting: "Attempting",
+        send: "Send",
+        webrtc_error: "Something went wrong with WebRTC. Either your browser does not support the necessary WebRTC functions, you did not allow your browser to access the microphone, or there is a configuration issue. Please check your browsers error console for more details. For a list of compatible browsers please vist http://webrtc.org/"
+      }
+    };
+  } // If selected language doesn't exist, fallback to english
+
+
+  if (typeof vici_translations[language] == "undefined") vici_translations[language] = vici_translations["en"];
+  return vici_translations[language][text];
+} // ===================== Start VoipIran Development ==========================
+// request permission on page load
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  if (!Notification) {
+    alert("Desktop notifications not available in your browser. Try Chromium.");
+    return;
+  }
+
+  if (Notification.permission !== "granted") Notification.requestPermission();
+});
+
+function notifyMe() {
+  // in customer mode its not necessary
+  return;
+  if (Notification.permission !== "granted") Notification.requestPermission();else {
+    var notification = new Notification("Webphone Ringing...", {
+      icon: "images/ringing.png",
+      body: "Incoming Call : " + uiElements.reg_status.value
+    });
+    notification.addEventListener("click", function (event) {// window.opener.doSome();
+    });
+
+    notification.onclick = function () {
+      window.opener.doSome(); //   openFullscreen();
+      // alert('pick up...');
+      //   window.open("http://stackoverflow.com/a/13328397/1269037");
+    };
+  } // =====================  focus the VOIPIRA Webphone On Top ===================
+
+  window.opener.doSome();
+} // temporary disabled
+
+
+var elem = document.documentElement;
+
+function openFullscreen() {
+  if (elem.requestFullscreen) {
+    elem.requestFullscreen();
+  } else if (elem.mozRequestFullScreen) {
+    /* Firefox */
+    elem.mozRequestFullScreen();
+  } else if (elem.webkitRequestFullscreen) {
+    /* Chrome, Safari & Opera */
+    elem.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) {
+    /* IE/Edge */
+    elem.msRequestFullscreen();
+  }
+}
+
+function closeFullscreen() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+  }
+} // temporary disabled
+// set Digits input call On Enter key
+
+
+document.getElementById("digits").addEventListener("keyup", function (event) {
+  event.preventDefault();
+
+  if (event.keyCode === 13) {
+    dialButton();
+  }
+}); // set default background color of Dial Button Green
+
+voipIranDialCall.style.background = "green"; // initial clock timer
+
+var minutes = 0,
+    seconds = 0,
+    timerLabel;
+var totalSeconds = 0;
+var intervalId;
+
+function setTime() {
+  ++totalSeconds;
+  seconds = pad(totalSeconds % 60);
+  minutes = pad(parseInt(totalSeconds / 60));
+  timerLabel = minutes + ":" + seconds; // uiElements.digits.value = timerLabel;
+  // uiElements.dial.value = timerLabel;
+  //   uiElements.speaking.innerText = timerLabel + " speaking";
+
+  vm.$data.status.spinnerLoading = false;
+  vm.$data.status.spekingTime = timerLabel;
+}
+
+function pad(val) {
+  var valString = val + "";
+
+  if (valString.length < 2) {
+    return "0" + valString;
+  } else {
+    return valString;
+  }
+}
+
+function startTimer() {
+  intervalId = setInterval(setTime, 1000);
+}
+
+function stopTimer(id) {
+  minutes = 0;
+  seconds = 0;
+  totalSeconds = 0;
+  timerLabel = null; //   uiElements.speaking.innerText = null;
+
+  vm.$data.status.spekingTime = null;
+  console.log("VOIPIRAN DISABLE InterVal ID -------- IS " + id);
+  clearInterval(id);
+} // dont let resize the window
+
+
+var size = [window.outerWidth, window.outerHeight];
+window.addEventListener("resize", function () {
+  window.resizeTo(size[0], size[1]);
+}); // Voipiran hangupCall Event
+
+uiElements.hangoutButton.addEventListener("click", function () {
+  voipiranHangupCall();
+}); // ---------- Start implement backSpace ----------
+
+document.addEventListener("keydown", KeyCheck); //or however you are calling your method
+
+function KeyCheck(event) {
+  var KeyID = event.keyCode;
+
+  switch (KeyID) {
+    case 8:
+      VoipIranBackSpace();
+      break;
+
+    case 13:
+      dialButton();
+      break;
+
+    case 46:
+      // Swal.fire('',"delete",'success');
+      break;
+
+    case 96:
+      dialPadPressed(0, false);
+      break;
+
+    case 97:
+      dialPadPressed(1, false);
+      break;
+
+    case 98:
+      dialPadPressed(2, false);
+      break;
+
+    case 99:
+      dialPadPressed(3, false);
+      break;
+
+    case 100:
+      dialPadPressed(4, false);
+      break;
+
+    case 101:
+      dialPadPressed(5, false);
+      break;
+
+    case 102:
+      dialPadPressed(6, false);
+      break;
+
+    case 103:
+      dialPadPressed(7, false);
+      break;
+
+    case 104:
+      dialPadPressed(8, false);
+      break;
+
+    case 105:
+      dialPadPressed(9, false);
+      break;
+
+    default:
+      // Swal.fire('','keyid '+KeyID,'success');
+      break;
+  }
+}
+
+function VoipIranBackSpace() {
+  var value = uiElements.digits.value;
+  uiElements.digits.value = value.substr(0, value.length - 1);
+} // ---------- End implement backSpace ----------
+// ===================== End VoipIran Development ==========================
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css&":
+/*!******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css& ***!
+  \******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../css-loader/dist/runtime/api.js */ "./node_modules/css-loader/dist/runtime/api.js");
+/* harmony import */ var _css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0__);
+// Imports
+
+var ___CSS_LOADER_EXPORT___ = _css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
+// Module
+___CSS_LOADER_EXPORT___.push([module.id, "\n.v-spinner .v-beat\n{\n    -webkit-animation: v-beatStretchDelay 0.7s infinite linear;\n            animation: v-beatStretchDelay 0.7s infinite linear;\n    -webkit-animation-fill-mode: both;\n\t          animation-fill-mode: both;\n    display: inline-block;\n}\n.v-spinner .v-beat-odd\n{\n  -webkit-animation-delay: 0s;\n          animation-delay: 0s;\n}\n.v-spinner .v-beat-even\n{\n  -webkit-animation-delay: 0.35s;\n          animation-delay: 0.35s;\n}\n@-webkit-keyframes v-beatStretchDelay\n{\n50%\n    {\n        transform: scale(0.75);\n        -webkit-opacity: 0.2;             \n                opacity: 0.2;\n}\n100%\n    {\n        transform: scale(1);\n        -webkit-opacity: 1;             \n                opacity: 1;\n}\n}\n@keyframes v-beatStretchDelay\n{\n50%\n    {\n        transform: scale(0.75);\n        -webkit-opacity: 0.2;             \n                opacity: 0.2;\n}\n100%\n    {\n        transform: scale(1);\n        -webkit-opacity: 1;             \n                opacity: 1;\n}\n}\n", ""]);
+// Exports
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
+
+
+/***/ }),
+
+/***/ "./node_modules/css-loader/dist/runtime/api.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/css-loader/dist/runtime/api.js ***!
+  \*****************************************************/
+/***/ ((module) => {
+
+"use strict";
+
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+// eslint-disable-next-line func-names
+module.exports = function (cssWithMappingToString) {
+  var list = []; // return the list of modules as css string
+
+  list.toString = function toString() {
+    return this.map(function (item) {
+      var content = cssWithMappingToString(item);
+
+      if (item[2]) {
+        return "@media ".concat(item[2], " {").concat(content, "}");
+      }
+
+      return content;
+    }).join('');
+  }; // import a list of modules into the list
+  // eslint-disable-next-line func-names
+
+
+  list.i = function (modules, mediaQuery, dedupe) {
+    if (typeof modules === 'string') {
+      // eslint-disable-next-line no-param-reassign
+      modules = [[null, modules, '']];
+    }
+
+    var alreadyImportedModules = {};
+
+    if (dedupe) {
+      for (var i = 0; i < this.length; i++) {
+        // eslint-disable-next-line prefer-destructuring
+        var id = this[i][0];
+
+        if (id != null) {
+          alreadyImportedModules[id] = true;
+        }
+      }
+    }
+
+    for (var _i = 0; _i < modules.length; _i++) {
+      var item = [].concat(modules[_i]);
+
+      if (dedupe && alreadyImportedModules[item[0]]) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      if (mediaQuery) {
+        if (!item[2]) {
+          item[2] = mediaQuery;
+        } else {
+          item[2] = "".concat(mediaQuery, " and ").concat(item[2]);
+        }
+      }
+
+      list.push(item);
+    }
+  };
+
+  return list;
+};
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css&":
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css& ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! !../../style-loader/dist/runtime/injectStylesIntoStyleTag.js */ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js");
+/* harmony import */ var _style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _css_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_1_vue_loader_lib_loaders_stylePostLoader_js_postcss_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_2_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! !!../../css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!../../vue-loader/lib/loaders/stylePostLoader.js!../../postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!../../vue-loader/lib/index.js??vue-loader-options!./BeatLoader.vue?vue&type=style&index=0&lang=css& */ "./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css&");
+
+            
+
+var options = {};
+
+options.insert = "head";
+options.singleton = false;
+
+var update = _style_loader_dist_runtime_injectStylesIntoStyleTag_js__WEBPACK_IMPORTED_MODULE_0___default()(_css_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_1_vue_loader_lib_loaders_stylePostLoader_js_postcss_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_2_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_1__.default, options);
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_css_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_1_vue_loader_lib_loaders_stylePostLoader_js_postcss_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_2_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_1__.default.locals || {});
+
+/***/ }),
+
+/***/ "./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js":
+/*!****************************************************************************!*\
+  !*** ./node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js ***!
+  \****************************************************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+"use strict";
+
+
+var isOldIE = function isOldIE() {
+  var memo;
+  return function memorize() {
+    if (typeof memo === 'undefined') {
+      // Test for IE <= 9 as proposed by Browserhacks
+      // @see http://browserhacks.com/#hack-e71d8692f65334173fee715c222cb805
+      // Tests for existence of standard globals is to allow style-loader
+      // to operate correctly into non-standard environments
+      // @see https://github.com/webpack-contrib/style-loader/issues/177
+      memo = Boolean(window && document && document.all && !window.atob);
+    }
+
+    return memo;
+  };
+}();
+
+var getTarget = function getTarget() {
+  var memo = {};
+  return function memorize(target) {
+    if (typeof memo[target] === 'undefined') {
+      var styleTarget = document.querySelector(target); // Special case to return head of iframe instead of iframe itself
+
+      if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+        try {
+          // This will throw an exception if access to iframe is blocked
+          // due to cross-origin restrictions
+          styleTarget = styleTarget.contentDocument.head;
+        } catch (e) {
+          // istanbul ignore next
+          styleTarget = null;
+        }
+      }
+
+      memo[target] = styleTarget;
+    }
+
+    return memo[target];
+  };
+}();
+
+var stylesInDom = [];
+
+function getIndexByIdentifier(identifier) {
+  var result = -1;
+
+  for (var i = 0; i < stylesInDom.length; i++) {
+    if (stylesInDom[i].identifier === identifier) {
+      result = i;
+      break;
+    }
+  }
+
+  return result;
+}
+
+function modulesToDom(list, options) {
+  var idCountMap = {};
+  var identifiers = [];
+
+  for (var i = 0; i < list.length; i++) {
+    var item = list[i];
+    var id = options.base ? item[0] + options.base : item[0];
+    var count = idCountMap[id] || 0;
+    var identifier = "".concat(id, " ").concat(count);
+    idCountMap[id] = count + 1;
+    var index = getIndexByIdentifier(identifier);
+    var obj = {
+      css: item[1],
+      media: item[2],
+      sourceMap: item[3]
+    };
+
+    if (index !== -1) {
+      stylesInDom[index].references++;
+      stylesInDom[index].updater(obj);
+    } else {
+      stylesInDom.push({
+        identifier: identifier,
+        updater: addStyle(obj, options),
+        references: 1
+      });
+    }
+
+    identifiers.push(identifier);
+  }
+
+  return identifiers;
+}
+
+function insertStyleElement(options) {
+  var style = document.createElement('style');
+  var attributes = options.attributes || {};
+
+  if (typeof attributes.nonce === 'undefined') {
+    var nonce =  true ? __webpack_require__.nc : 0;
+
+    if (nonce) {
+      attributes.nonce = nonce;
+    }
+  }
+
+  Object.keys(attributes).forEach(function (key) {
+    style.setAttribute(key, attributes[key]);
+  });
+
+  if (typeof options.insert === 'function') {
+    options.insert(style);
+  } else {
+    var target = getTarget(options.insert || 'head');
+
+    if (!target) {
+      throw new Error("Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.");
+    }
+
+    target.appendChild(style);
+  }
+
+  return style;
+}
+
+function removeStyleElement(style) {
+  // istanbul ignore if
+  if (style.parentNode === null) {
+    return false;
+  }
+
+  style.parentNode.removeChild(style);
+}
+/* istanbul ignore next  */
+
+
+var replaceText = function replaceText() {
+  var textStore = [];
+  return function replace(index, replacement) {
+    textStore[index] = replacement;
+    return textStore.filter(Boolean).join('\n');
+  };
+}();
+
+function applyToSingletonTag(style, index, remove, obj) {
+  var css = remove ? '' : obj.media ? "@media ".concat(obj.media, " {").concat(obj.css, "}") : obj.css; // For old IE
+
+  /* istanbul ignore if  */
+
+  if (style.styleSheet) {
+    style.styleSheet.cssText = replaceText(index, css);
+  } else {
+    var cssNode = document.createTextNode(css);
+    var childNodes = style.childNodes;
+
+    if (childNodes[index]) {
+      style.removeChild(childNodes[index]);
+    }
+
+    if (childNodes.length) {
+      style.insertBefore(cssNode, childNodes[index]);
+    } else {
+      style.appendChild(cssNode);
+    }
+  }
+}
+
+function applyToTag(style, options, obj) {
+  var css = obj.css;
+  var media = obj.media;
+  var sourceMap = obj.sourceMap;
+
+  if (media) {
+    style.setAttribute('media', media);
+  } else {
+    style.removeAttribute('media');
+  }
+
+  if (sourceMap && typeof btoa !== 'undefined') {
+    css += "\n/*# sourceMappingURL=data:application/json;base64,".concat(btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))), " */");
+  } // For old IE
+
+  /* istanbul ignore if  */
+
+
+  if (style.styleSheet) {
+    style.styleSheet.cssText = css;
+  } else {
+    while (style.firstChild) {
+      style.removeChild(style.firstChild);
+    }
+
+    style.appendChild(document.createTextNode(css));
+  }
+}
+
+var singleton = null;
+var singletonCounter = 0;
+
+function addStyle(obj, options) {
+  var style;
+  var update;
+  var remove;
+
+  if (options.singleton) {
+    var styleIndex = singletonCounter++;
+    style = singleton || (singleton = insertStyleElement(options));
+    update = applyToSingletonTag.bind(null, style, styleIndex, false);
+    remove = applyToSingletonTag.bind(null, style, styleIndex, true);
+  } else {
+    style = insertStyleElement(options);
+    update = applyToTag.bind(null, style, options);
+
+    remove = function remove() {
+      removeStyleElement(style);
+    };
+  }
+
+  update(obj);
+  return function updateStyle(newObj) {
+    if (newObj) {
+      if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap) {
+        return;
+      }
+
+      update(obj = newObj);
+    } else {
+      remove();
+    }
+  };
+}
+
+module.exports = function (list, options) {
+  options = options || {}; // Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+  // tags it will allow on a page
+
+  if (!options.singleton && typeof options.singleton !== 'boolean') {
+    options.singleton = isOldIE();
+  }
+
+  list = list || [];
+  var lastIdentifiers = modulesToDom(list, options);
+  return function update(newList) {
+    newList = newList || [];
+
+    if (Object.prototype.toString.call(newList) !== '[object Array]') {
+      return;
+    }
+
+    for (var i = 0; i < lastIdentifiers.length; i++) {
+      var identifier = lastIdentifiers[i];
+      var index = getIndexByIdentifier(identifier);
+      stylesInDom[index].references--;
+    }
+
+    var newLastIdentifiers = modulesToDom(newList, options);
+
+    for (var _i = 0; _i < lastIdentifiers.length; _i++) {
+      var _identifier = lastIdentifiers[_i];
+
+      var _index = getIndexByIdentifier(_identifier);
+
+      if (stylesInDom[_index].references === 0) {
+        stylesInDom[_index].updater();
+
+        stylesInDom.splice(_index, 1);
+      }
+    }
+
+    lastIdentifiers = newLastIdentifiers;
+  };
+};
 
 /***/ }),
 
@@ -3670,6 +5272,313 @@ var index = new vue__WEBPACK_IMPORTED_MODULE_1__.default({
 if (typeof this !== 'undefined' && this.Sweetalert2){  this.swal = this.sweetAlert = this.Swal = this.SweetAlert = this.Sweetalert2}
 
 "undefined"!=typeof document&&function(e,t){var n=e.createElement("style");if(e.getElementsByTagName("head")[0].appendChild(n),n.styleSheet)n.styleSheet.disabled||(n.styleSheet.cssText=t);else try{n.innerHTML=t}catch(e){n.innerText=t}}(document,".swal2-popup.swal2-toast{flex-direction:row;align-items:center;width:auto;padding:.625em;overflow-y:hidden;background:#fff;box-shadow:0 0 .625em #d9d9d9}.swal2-popup.swal2-toast .swal2-header{flex-direction:row;padding:0}.swal2-popup.swal2-toast .swal2-title{flex-grow:1;justify-content:flex-start;margin:0 .6em;font-size:1em}.swal2-popup.swal2-toast .swal2-footer{margin:.5em 0 0;padding:.5em 0 0;font-size:.8em}.swal2-popup.swal2-toast .swal2-close{position:static;width:.8em;height:.8em;line-height:.8}.swal2-popup.swal2-toast .swal2-content{justify-content:flex-start;padding:0;font-size:1em}.swal2-popup.swal2-toast .swal2-icon{width:2em;min-width:2em;height:2em;margin:0}.swal2-popup.swal2-toast .swal2-icon .swal2-icon-content{display:flex;align-items:center;font-size:1.8em;font-weight:700}@media all and (-ms-high-contrast:none),(-ms-high-contrast:active){.swal2-popup.swal2-toast .swal2-icon .swal2-icon-content{font-size:.25em}}.swal2-popup.swal2-toast .swal2-icon.swal2-success .swal2-success-ring{width:2em;height:2em}.swal2-popup.swal2-toast .swal2-icon.swal2-error [class^=swal2-x-mark-line]{top:.875em;width:1.375em}.swal2-popup.swal2-toast .swal2-icon.swal2-error [class^=swal2-x-mark-line][class$=left]{left:.3125em}.swal2-popup.swal2-toast .swal2-icon.swal2-error [class^=swal2-x-mark-line][class$=right]{right:.3125em}.swal2-popup.swal2-toast .swal2-actions{flex-basis:auto!important;width:auto;height:auto;margin:0 .3125em;padding:0}.swal2-popup.swal2-toast .swal2-styled{margin:.125em .3125em;padding:.3125em .625em;font-size:1em}.swal2-popup.swal2-toast .swal2-styled:focus{box-shadow:0 0 0 1px #fff,0 0 0 3px rgba(100,150,200,.5)}.swal2-popup.swal2-toast .swal2-success{border-color:#a5dc86}.swal2-popup.swal2-toast .swal2-success [class^=swal2-success-circular-line]{position:absolute;width:1.6em;height:3em;transform:rotate(45deg);border-radius:50%}.swal2-popup.swal2-toast .swal2-success [class^=swal2-success-circular-line][class$=left]{top:-.8em;left:-.5em;transform:rotate(-45deg);transform-origin:2em 2em;border-radius:4em 0 0 4em}.swal2-popup.swal2-toast .swal2-success [class^=swal2-success-circular-line][class$=right]{top:-.25em;left:.9375em;transform-origin:0 1.5em;border-radius:0 4em 4em 0}.swal2-popup.swal2-toast .swal2-success .swal2-success-ring{width:2em;height:2em}.swal2-popup.swal2-toast .swal2-success .swal2-success-fix{top:0;left:.4375em;width:.4375em;height:2.6875em}.swal2-popup.swal2-toast .swal2-success [class^=swal2-success-line]{height:.3125em}.swal2-popup.swal2-toast .swal2-success [class^=swal2-success-line][class$=tip]{top:1.125em;left:.1875em;width:.75em}.swal2-popup.swal2-toast .swal2-success [class^=swal2-success-line][class$=long]{top:.9375em;right:.1875em;width:1.375em}.swal2-popup.swal2-toast .swal2-success.swal2-icon-show .swal2-success-line-tip{-webkit-animation:swal2-toast-animate-success-line-tip .75s;animation:swal2-toast-animate-success-line-tip .75s}.swal2-popup.swal2-toast .swal2-success.swal2-icon-show .swal2-success-line-long{-webkit-animation:swal2-toast-animate-success-line-long .75s;animation:swal2-toast-animate-success-line-long .75s}.swal2-popup.swal2-toast.swal2-show{-webkit-animation:swal2-toast-show .5s;animation:swal2-toast-show .5s}.swal2-popup.swal2-toast.swal2-hide{-webkit-animation:swal2-toast-hide .1s forwards;animation:swal2-toast-hide .1s forwards}.swal2-container{display:flex;position:fixed;z-index:1060;top:0;right:0;bottom:0;left:0;flex-direction:row;align-items:center;justify-content:center;padding:.625em;overflow-x:hidden;transition:background-color .1s;-webkit-overflow-scrolling:touch}.swal2-container.swal2-backdrop-show,.swal2-container.swal2-noanimation{background:rgba(0,0,0,.4)}.swal2-container.swal2-backdrop-hide{background:0 0!important}.swal2-container.swal2-top{align-items:flex-start}.swal2-container.swal2-top-left,.swal2-container.swal2-top-start{align-items:flex-start;justify-content:flex-start}.swal2-container.swal2-top-end,.swal2-container.swal2-top-right{align-items:flex-start;justify-content:flex-end}.swal2-container.swal2-center{align-items:center}.swal2-container.swal2-center-left,.swal2-container.swal2-center-start{align-items:center;justify-content:flex-start}.swal2-container.swal2-center-end,.swal2-container.swal2-center-right{align-items:center;justify-content:flex-end}.swal2-container.swal2-bottom{align-items:flex-end}.swal2-container.swal2-bottom-left,.swal2-container.swal2-bottom-start{align-items:flex-end;justify-content:flex-start}.swal2-container.swal2-bottom-end,.swal2-container.swal2-bottom-right{align-items:flex-end;justify-content:flex-end}.swal2-container.swal2-bottom-end>:first-child,.swal2-container.swal2-bottom-left>:first-child,.swal2-container.swal2-bottom-right>:first-child,.swal2-container.swal2-bottom-start>:first-child,.swal2-container.swal2-bottom>:first-child{margin-top:auto}.swal2-container.swal2-grow-fullscreen>.swal2-modal{display:flex!important;flex:1;align-self:stretch;justify-content:center}.swal2-container.swal2-grow-row>.swal2-modal{display:flex!important;flex:1;align-content:center;justify-content:center}.swal2-container.swal2-grow-column{flex:1;flex-direction:column}.swal2-container.swal2-grow-column.swal2-bottom,.swal2-container.swal2-grow-column.swal2-center,.swal2-container.swal2-grow-column.swal2-top{align-items:center}.swal2-container.swal2-grow-column.swal2-bottom-left,.swal2-container.swal2-grow-column.swal2-bottom-start,.swal2-container.swal2-grow-column.swal2-center-left,.swal2-container.swal2-grow-column.swal2-center-start,.swal2-container.swal2-grow-column.swal2-top-left,.swal2-container.swal2-grow-column.swal2-top-start{align-items:flex-start}.swal2-container.swal2-grow-column.swal2-bottom-end,.swal2-container.swal2-grow-column.swal2-bottom-right,.swal2-container.swal2-grow-column.swal2-center-end,.swal2-container.swal2-grow-column.swal2-center-right,.swal2-container.swal2-grow-column.swal2-top-end,.swal2-container.swal2-grow-column.swal2-top-right{align-items:flex-end}.swal2-container.swal2-grow-column>.swal2-modal{display:flex!important;flex:1;align-content:center;justify-content:center}.swal2-container.swal2-no-transition{transition:none!important}.swal2-container:not(.swal2-top):not(.swal2-top-start):not(.swal2-top-end):not(.swal2-top-left):not(.swal2-top-right):not(.swal2-center-start):not(.swal2-center-end):not(.swal2-center-left):not(.swal2-center-right):not(.swal2-bottom):not(.swal2-bottom-start):not(.swal2-bottom-end):not(.swal2-bottom-left):not(.swal2-bottom-right):not(.swal2-grow-fullscreen)>.swal2-modal{margin:auto}@media all and (-ms-high-contrast:none),(-ms-high-contrast:active){.swal2-container .swal2-modal{margin:0!important}}.swal2-popup{display:none;position:relative;box-sizing:border-box;flex-direction:column;justify-content:center;width:32em;max-width:100%;padding:1.25em;border:none;border-radius:5px;background:#fff;font-family:inherit;font-size:1rem}.swal2-popup:focus{outline:0}.swal2-popup.swal2-loading{overflow-y:hidden}.swal2-header{display:flex;flex-direction:column;align-items:center;padding:0 1.8em}.swal2-title{position:relative;max-width:100%;margin:0 0 .4em;padding:0;color:#595959;font-size:1.875em;font-weight:600;text-align:center;text-transform:none;word-wrap:break-word}.swal2-actions{display:flex;z-index:1;box-sizing:border-box;flex-wrap:wrap;align-items:center;justify-content:center;width:100%;margin:1.25em auto 0;padding:0 1.6em}.swal2-actions:not(.swal2-loading) .swal2-styled[disabled]{opacity:.4}.swal2-actions:not(.swal2-loading) .swal2-styled:hover{background-image:linear-gradient(rgba(0,0,0,.1),rgba(0,0,0,.1))}.swal2-actions:not(.swal2-loading) .swal2-styled:active{background-image:linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.2))}.swal2-loader{display:none;align-items:center;justify-content:center;width:2.2em;height:2.2em;margin:0 1.875em;-webkit-animation:swal2-rotate-loading 1.5s linear 0s infinite normal;animation:swal2-rotate-loading 1.5s linear 0s infinite normal;border-width:.25em;border-style:solid;border-radius:100%;border-color:#2778c4 transparent #2778c4 transparent}.swal2-styled{margin:.3125em;padding:.625em 1.1em;box-shadow:none;font-weight:500}.swal2-styled:not([disabled]){cursor:pointer}.swal2-styled.swal2-confirm{border:0;border-radius:.25em;background:initial;background-color:#2778c4;color:#fff;font-size:1.0625em}.swal2-styled.swal2-deny{border:0;border-radius:.25em;background:initial;background-color:#d14529;color:#fff;font-size:1.0625em}.swal2-styled.swal2-cancel{border:0;border-radius:.25em;background:initial;background-color:#757575;color:#fff;font-size:1.0625em}.swal2-styled:focus{outline:0;box-shadow:0 0 0 3px rgba(100,150,200,.5)}.swal2-styled::-moz-focus-inner{border:0}.swal2-footer{justify-content:center;margin:1.25em 0 0;padding:1em 0 0;border-top:1px solid #eee;color:#545454;font-size:1em}.swal2-timer-progress-bar-container{position:absolute;right:0;bottom:0;left:0;height:.25em;overflow:hidden;border-bottom-right-radius:5px;border-bottom-left-radius:5px}.swal2-timer-progress-bar{width:100%;height:.25em;background:rgba(0,0,0,.2)}.swal2-image{max-width:100%;margin:1.25em auto}.swal2-close{position:absolute;z-index:2;top:0;right:0;align-items:center;justify-content:center;width:1.2em;height:1.2em;padding:0;overflow:hidden;transition:color .1s ease-out;border:none;border-radius:5px;background:0 0;color:#ccc;font-family:serif;font-size:2.5em;line-height:1.2;cursor:pointer}.swal2-close:hover{transform:none;background:0 0;color:#f27474}.swal2-close:focus{outline:0;box-shadow:inset 0 0 0 3px rgba(100,150,200,.5)}.swal2-close::-moz-focus-inner{border:0}.swal2-content{z-index:1;justify-content:center;margin:0;padding:0 1.6em;color:#545454;font-size:1.125em;font-weight:400;line-height:normal;text-align:center;word-wrap:break-word}.swal2-checkbox,.swal2-file,.swal2-input,.swal2-radio,.swal2-select,.swal2-textarea{margin:1em auto}.swal2-file,.swal2-input,.swal2-textarea{box-sizing:border-box;width:100%;transition:border-color .3s,box-shadow .3s;border:1px solid #d9d9d9;border-radius:.1875em;background:inherit;box-shadow:inset 0 1px 1px rgba(0,0,0,.06);color:inherit;font-size:1.125em}.swal2-file.swal2-inputerror,.swal2-input.swal2-inputerror,.swal2-textarea.swal2-inputerror{border-color:#f27474!important;box-shadow:0 0 2px #f27474!important}.swal2-file:focus,.swal2-input:focus,.swal2-textarea:focus{border:1px solid #b4dbed;outline:0;box-shadow:0 0 0 3px rgba(100,150,200,.5)}.swal2-file::-moz-placeholder,.swal2-input::-moz-placeholder,.swal2-textarea::-moz-placeholder{color:#ccc}.swal2-file:-ms-input-placeholder,.swal2-input:-ms-input-placeholder,.swal2-textarea:-ms-input-placeholder{color:#ccc}.swal2-file::placeholder,.swal2-input::placeholder,.swal2-textarea::placeholder{color:#ccc}.swal2-range{margin:1em auto;background:#fff}.swal2-range input{width:80%}.swal2-range output{width:20%;color:inherit;font-weight:600;text-align:center}.swal2-range input,.swal2-range output{height:2.625em;padding:0;font-size:1.125em;line-height:2.625em}.swal2-input{height:2.625em;padding:0 .75em}.swal2-input[type=number]{max-width:10em}.swal2-file{background:inherit;font-size:1.125em}.swal2-textarea{height:6.75em;padding:.75em}.swal2-select{min-width:50%;max-width:100%;padding:.375em .625em;background:inherit;color:inherit;font-size:1.125em}.swal2-checkbox,.swal2-radio{align-items:center;justify-content:center;background:#fff;color:inherit}.swal2-checkbox label,.swal2-radio label{margin:0 .6em;font-size:1.125em}.swal2-checkbox input,.swal2-radio input{margin:0 .4em}.swal2-input-label{display:flex;justify-content:center;margin:1em auto}.swal2-validation-message{display:none;align-items:center;justify-content:center;margin:0 -2.7em;padding:.625em;overflow:hidden;background:#f0f0f0;color:#666;font-size:1em;font-weight:300}.swal2-validation-message::before{content:\"!\";display:inline-block;width:1.5em;min-width:1.5em;height:1.5em;margin:0 .625em;border-radius:50%;background-color:#f27474;color:#fff;font-weight:600;line-height:1.5em;text-align:center}.swal2-icon{position:relative;box-sizing:content-box;justify-content:center;width:5em;height:5em;margin:1.25em auto 1.875em;border:.25em solid transparent;border-radius:50%;font-family:inherit;line-height:5em;cursor:default;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.swal2-icon .swal2-icon-content{display:flex;align-items:center;font-size:3.75em}.swal2-icon.swal2-error{border-color:#f27474;color:#f27474}.swal2-icon.swal2-error .swal2-x-mark{position:relative;flex-grow:1;zoom:1}.swal2-icon.swal2-error [class^=swal2-x-mark-line]{display:block;position:absolute;top:2.3125em;width:2.9375em;height:.3125em;border-radius:.125em;background-color:#f27474}.swal2-icon.swal2-error [class^=swal2-x-mark-line][class$=left]{left:1.0625em;transform:rotate(45deg)}.swal2-icon.swal2-error [class^=swal2-x-mark-line][class$=right]{right:1em;transform:rotate(-45deg)}.swal2-icon.swal2-error.swal2-icon-show{-webkit-animation:swal2-animate-error-icon .5s;animation:swal2-animate-error-icon .5s}.swal2-icon.swal2-error.swal2-icon-show .swal2-x-mark{-webkit-animation:swal2-animate-error-x-mark .5s;animation:swal2-animate-error-x-mark .5s}.swal2-icon.swal2-warning{border-color:#facea8;color:#f8bb86}.swal2-icon.swal2-info{border-color:#9de0f6;color:#3fc3ee}.swal2-icon.swal2-question{border-color:#c9dae1;color:#87adbd}.swal2-icon.swal2-success{border-color:#a5dc86;color:#a5dc86}.swal2-icon.swal2-success [class^=swal2-success-circular-line]{position:absolute;width:3.75em;height:7.5em;transform:rotate(45deg);border-radius:50%}.swal2-icon.swal2-success [class^=swal2-success-circular-line][class$=left]{top:-.4375em;left:-2.0635em;zoom:1;transform:rotate(-45deg);transform-origin:3.75em 3.75em;border-radius:7.5em 0 0 7.5em}.swal2-icon.swal2-success [class^=swal2-success-circular-line][class$=right]{top:-.6875em;left:1.875em;zoom:1;transform:rotate(-45deg);transform-origin:0 3.75em;border-radius:0 7.5em 7.5em 0}.swal2-icon.swal2-success .swal2-success-ring{position:absolute;z-index:2;top:-.25em;left:-.25em;box-sizing:content-box;width:100%;height:100%;zoom:1;border:.25em solid rgba(165,220,134,.3);border-radius:50%}.swal2-icon.swal2-success .swal2-success-fix{position:absolute;z-index:1;top:.5em;left:1.625em;width:.4375em;height:5.625em;zoom:1;transform:rotate(-45deg)}.swal2-icon.swal2-success [class^=swal2-success-line]{display:block;position:absolute;z-index:2;height:.3125em;zoom:1;border-radius:.125em;background-color:#a5dc86}.swal2-icon.swal2-success [class^=swal2-success-line][class$=tip]{top:2.875em;left:.8125em;width:1.5625em;transform:rotate(45deg)}.swal2-icon.swal2-success [class^=swal2-success-line][class$=long]{top:2.375em;right:.5em;width:2.9375em;transform:rotate(-45deg)}.swal2-icon.swal2-success.swal2-icon-show .swal2-success-line-tip{-webkit-animation:swal2-animate-success-line-tip .75s;animation:swal2-animate-success-line-tip .75s}.swal2-icon.swal2-success.swal2-icon-show .swal2-success-line-long{-webkit-animation:swal2-animate-success-line-long .75s;animation:swal2-animate-success-line-long .75s}.swal2-icon.swal2-success.swal2-icon-show .swal2-success-circular-line-right{-webkit-animation:swal2-rotate-success-circular-line 4.25s ease-in;animation:swal2-rotate-success-circular-line 4.25s ease-in}.swal2-progress-steps{flex-wrap:wrap;align-items:center;max-width:100%;margin:0 0 1.25em;padding:0;background:inherit;font-weight:600}.swal2-progress-steps li{display:inline-block;position:relative}.swal2-progress-steps .swal2-progress-step{z-index:20;flex-shrink:0;width:2em;height:2em;border-radius:2em;background:#2778c4;color:#fff;line-height:2em;text-align:center}.swal2-progress-steps .swal2-progress-step.swal2-active-progress-step{background:#2778c4}.swal2-progress-steps .swal2-progress-step.swal2-active-progress-step~.swal2-progress-step{background:#add8e6;color:#fff}.swal2-progress-steps .swal2-progress-step.swal2-active-progress-step~.swal2-progress-step-line{background:#add8e6}.swal2-progress-steps .swal2-progress-step-line{z-index:10;flex-shrink:0;width:2.5em;height:.4em;margin:0 -1px;background:#2778c4}[class^=swal2]{-webkit-tap-highlight-color:transparent}.swal2-show{-webkit-animation:swal2-show .3s;animation:swal2-show .3s}.swal2-hide{-webkit-animation:swal2-hide .15s forwards;animation:swal2-hide .15s forwards}.swal2-noanimation{transition:none}.swal2-scrollbar-measure{position:absolute;top:-9999px;width:50px;height:50px;overflow:scroll}.swal2-rtl .swal2-close{right:auto;left:0}.swal2-rtl .swal2-timer-progress-bar{right:0;left:auto}@supports (-ms-accelerator:true){.swal2-range input{width:100%!important}.swal2-range output{display:none}}@media all and (-ms-high-contrast:none),(-ms-high-contrast:active){.swal2-range input{width:100%!important}.swal2-range output{display:none}}@-webkit-keyframes swal2-toast-show{0%{transform:translateY(-.625em) rotateZ(2deg)}33%{transform:translateY(0) rotateZ(-2deg)}66%{transform:translateY(.3125em) rotateZ(2deg)}100%{transform:translateY(0) rotateZ(0)}}@keyframes swal2-toast-show{0%{transform:translateY(-.625em) rotateZ(2deg)}33%{transform:translateY(0) rotateZ(-2deg)}66%{transform:translateY(.3125em) rotateZ(2deg)}100%{transform:translateY(0) rotateZ(0)}}@-webkit-keyframes swal2-toast-hide{100%{transform:rotateZ(1deg);opacity:0}}@keyframes swal2-toast-hide{100%{transform:rotateZ(1deg);opacity:0}}@-webkit-keyframes swal2-toast-animate-success-line-tip{0%{top:.5625em;left:.0625em;width:0}54%{top:.125em;left:.125em;width:0}70%{top:.625em;left:-.25em;width:1.625em}84%{top:1.0625em;left:.75em;width:.5em}100%{top:1.125em;left:.1875em;width:.75em}}@keyframes swal2-toast-animate-success-line-tip{0%{top:.5625em;left:.0625em;width:0}54%{top:.125em;left:.125em;width:0}70%{top:.625em;left:-.25em;width:1.625em}84%{top:1.0625em;left:.75em;width:.5em}100%{top:1.125em;left:.1875em;width:.75em}}@-webkit-keyframes swal2-toast-animate-success-line-long{0%{top:1.625em;right:1.375em;width:0}65%{top:1.25em;right:.9375em;width:0}84%{top:.9375em;right:0;width:1.125em}100%{top:.9375em;right:.1875em;width:1.375em}}@keyframes swal2-toast-animate-success-line-long{0%{top:1.625em;right:1.375em;width:0}65%{top:1.25em;right:.9375em;width:0}84%{top:.9375em;right:0;width:1.125em}100%{top:.9375em;right:.1875em;width:1.375em}}@-webkit-keyframes swal2-show{0%{transform:scale(.7)}45%{transform:scale(1.05)}80%{transform:scale(.95)}100%{transform:scale(1)}}@keyframes swal2-show{0%{transform:scale(.7)}45%{transform:scale(1.05)}80%{transform:scale(.95)}100%{transform:scale(1)}}@-webkit-keyframes swal2-hide{0%{transform:scale(1);opacity:1}100%{transform:scale(.5);opacity:0}}@keyframes swal2-hide{0%{transform:scale(1);opacity:1}100%{transform:scale(.5);opacity:0}}@-webkit-keyframes swal2-animate-success-line-tip{0%{top:1.1875em;left:.0625em;width:0}54%{top:1.0625em;left:.125em;width:0}70%{top:2.1875em;left:-.375em;width:3.125em}84%{top:3em;left:1.3125em;width:1.0625em}100%{top:2.8125em;left:.8125em;width:1.5625em}}@keyframes swal2-animate-success-line-tip{0%{top:1.1875em;left:.0625em;width:0}54%{top:1.0625em;left:.125em;width:0}70%{top:2.1875em;left:-.375em;width:3.125em}84%{top:3em;left:1.3125em;width:1.0625em}100%{top:2.8125em;left:.8125em;width:1.5625em}}@-webkit-keyframes swal2-animate-success-line-long{0%{top:3.375em;right:2.875em;width:0}65%{top:3.375em;right:2.875em;width:0}84%{top:2.1875em;right:0;width:3.4375em}100%{top:2.375em;right:.5em;width:2.9375em}}@keyframes swal2-animate-success-line-long{0%{top:3.375em;right:2.875em;width:0}65%{top:3.375em;right:2.875em;width:0}84%{top:2.1875em;right:0;width:3.4375em}100%{top:2.375em;right:.5em;width:2.9375em}}@-webkit-keyframes swal2-rotate-success-circular-line{0%{transform:rotate(-45deg)}5%{transform:rotate(-45deg)}12%{transform:rotate(-405deg)}100%{transform:rotate(-405deg)}}@keyframes swal2-rotate-success-circular-line{0%{transform:rotate(-45deg)}5%{transform:rotate(-45deg)}12%{transform:rotate(-405deg)}100%{transform:rotate(-405deg)}}@-webkit-keyframes swal2-animate-error-x-mark{0%{margin-top:1.625em;transform:scale(.4);opacity:0}50%{margin-top:1.625em;transform:scale(.4);opacity:0}80%{margin-top:-.375em;transform:scale(1.15)}100%{margin-top:0;transform:scale(1);opacity:1}}@keyframes swal2-animate-error-x-mark{0%{margin-top:1.625em;transform:scale(.4);opacity:0}50%{margin-top:1.625em;transform:scale(.4);opacity:0}80%{margin-top:-.375em;transform:scale(1.15)}100%{margin-top:0;transform:scale(1);opacity:1}}@-webkit-keyframes swal2-animate-error-icon{0%{transform:rotateX(100deg);opacity:0}100%{transform:rotateX(0);opacity:1}}@keyframes swal2-animate-error-icon{0%{transform:rotateX(100deg);opacity:0}100%{transform:rotateX(0);opacity:1}}@-webkit-keyframes swal2-rotate-loading{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}@keyframes swal2-rotate-loading{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown){overflow:hidden}body.swal2-height-auto{height:auto!important}body.swal2-no-backdrop .swal2-container{top:auto;right:auto;bottom:auto;left:auto;max-width:calc(100% - .625em * 2);background-color:transparent!important}body.swal2-no-backdrop .swal2-container>.swal2-modal{box-shadow:0 0 10px rgba(0,0,0,.4)}body.swal2-no-backdrop .swal2-container.swal2-top{top:0;left:50%;transform:translateX(-50%)}body.swal2-no-backdrop .swal2-container.swal2-top-left,body.swal2-no-backdrop .swal2-container.swal2-top-start{top:0;left:0}body.swal2-no-backdrop .swal2-container.swal2-top-end,body.swal2-no-backdrop .swal2-container.swal2-top-right{top:0;right:0}body.swal2-no-backdrop .swal2-container.swal2-center{top:50%;left:50%;transform:translate(-50%,-50%)}body.swal2-no-backdrop .swal2-container.swal2-center-left,body.swal2-no-backdrop .swal2-container.swal2-center-start{top:50%;left:0;transform:translateY(-50%)}body.swal2-no-backdrop .swal2-container.swal2-center-end,body.swal2-no-backdrop .swal2-container.swal2-center-right{top:50%;right:0;transform:translateY(-50%)}body.swal2-no-backdrop .swal2-container.swal2-bottom{bottom:0;left:50%;transform:translateX(-50%)}body.swal2-no-backdrop .swal2-container.swal2-bottom-left,body.swal2-no-backdrop .swal2-container.swal2-bottom-start{bottom:0;left:0}body.swal2-no-backdrop .swal2-container.swal2-bottom-end,body.swal2-no-backdrop .swal2-container.swal2-bottom-right{right:0;bottom:0}@media print{body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown){overflow-y:scroll!important}body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown)>[aria-hidden=true]{display:none}body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) .swal2-container{position:static!important}}body.swal2-toast-shown .swal2-container{background-color:transparent}body.swal2-toast-shown .swal2-container.swal2-top{top:0;right:auto;bottom:auto;left:50%;transform:translateX(-50%)}body.swal2-toast-shown .swal2-container.swal2-top-end,body.swal2-toast-shown .swal2-container.swal2-top-right{top:0;right:0;bottom:auto;left:auto}body.swal2-toast-shown .swal2-container.swal2-top-left,body.swal2-toast-shown .swal2-container.swal2-top-start{top:0;right:auto;bottom:auto;left:0}body.swal2-toast-shown .swal2-container.swal2-center-left,body.swal2-toast-shown .swal2-container.swal2-center-start{top:50%;right:auto;bottom:auto;left:0;transform:translateY(-50%)}body.swal2-toast-shown .swal2-container.swal2-center{top:50%;right:auto;bottom:auto;left:50%;transform:translate(-50%,-50%)}body.swal2-toast-shown .swal2-container.swal2-center-end,body.swal2-toast-shown .swal2-container.swal2-center-right{top:50%;right:0;bottom:auto;left:auto;transform:translateY(-50%)}body.swal2-toast-shown .swal2-container.swal2-bottom-left,body.swal2-toast-shown .swal2-container.swal2-bottom-start{top:auto;right:auto;bottom:0;left:0}body.swal2-toast-shown .swal2-container.swal2-bottom{top:auto;right:auto;bottom:0;left:50%;transform:translateX(-50%)}body.swal2-toast-shown .swal2-container.swal2-bottom-end,body.swal2-toast-shown .swal2-container.swal2-bottom-right{top:auto;right:0;bottom:0;left:auto}body.swal2-toast-column .swal2-toast{flex-direction:column;align-items:stretch}body.swal2-toast-column .swal2-toast .swal2-actions{flex:1;align-self:stretch;height:2.2em;margin-top:.3125em}body.swal2-toast-column .swal2-toast .swal2-loading{justify-content:center}body.swal2-toast-column .swal2-toast .swal2-input{height:2em;margin:.3125em auto;font-size:1em}body.swal2-toast-column .swal2-toast .swal2-validation-message{font-size:1em}");
+
+/***/ }),
+
+/***/ "./node_modules/vue-spinner/src/BeatLoader.vue":
+/*!*****************************************************!*\
+  !*** ./node_modules/vue-spinner/src/BeatLoader.vue ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _BeatLoader_vue_vue_type_template_id_37a98790___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./BeatLoader.vue?vue&type=template&id=37a98790& */ "./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=template&id=37a98790&");
+/* harmony import */ var _BeatLoader_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./BeatLoader.vue?vue&type=script&lang=js& */ "./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=script&lang=js&");
+/* harmony import */ var _BeatLoader_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./BeatLoader.vue?vue&type=style&index=0&lang=css& */ "./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css&");
+/* harmony import */ var _vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! !../../vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
+
+
+
+;
+
+
+/* normalize component */
+
+var component = (0,_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__.default)(
+  _BeatLoader_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__.default,
+  _BeatLoader_vue_vue_type_template_id_37a98790___WEBPACK_IMPORTED_MODULE_0__.render,
+  _BeatLoader_vue_vue_type_template_id_37a98790___WEBPACK_IMPORTED_MODULE_0__.staticRenderFns,
+  false,
+  null,
+  null,
+  null
+  
+)
+
+/* hot reload */
+if (false) { var api; }
+component.options.__file = "node_modules/vue-spinner/src/BeatLoader.vue"
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (component.exports);
+
+/***/ }),
+
+/***/ "./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=script&lang=js&":
+/*!*****************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=script&lang=js& ***!
+  \*****************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  
+  name: 'BeatLoader',
+
+  props: {
+    loading: {
+      type: Boolean,
+      default: true
+    },
+    color: { 
+      type: String,
+      default: '#5dc596'
+    },
+    size: {
+      type: String,
+      default: '15px'
+    },
+    margin: {
+      type: String,
+      default: '2px'
+    },
+    radius: {
+      type: String,
+      default: '100%'
+    }
+  },
+  data () {
+    return {
+      spinnerStyle: {
+      	backgroundColor: this.color,
+      	height: this.size,
+     		width: this.size,
+      	margin: this.margin,
+      	borderRadius: this.radius
+      }
+    }
+  }
+
+});
+
+
+/***/ }),
+
+/***/ "./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css&":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css& ***!
+  \**************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _style_loader_dist_cjs_js_css_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_1_vue_loader_lib_loaders_stylePostLoader_js_postcss_loader_dist_cjs_js_clonedRuleSet_9_0_rules_0_use_2_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_style_index_0_lang_css___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../style-loader/dist/cjs.js!../../css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!../../vue-loader/lib/loaders/stylePostLoader.js!../../postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!../../vue-loader/lib/index.js??vue-loader-options!./BeatLoader.vue?vue&type=style&index=0&lang=css& */ "./node_modules/style-loader/dist/cjs.js!./node_modules/css-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[1]!./node_modules/vue-loader/lib/loaders/stylePostLoader.js!./node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-9[0].rules[0].use[2]!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=style&index=0&lang=css&");
+
+
+/***/ }),
+
+/***/ "./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=script&lang=js&":
+/*!******************************************************************************!*\
+  !*** ./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=script&lang=js& ***!
+  \******************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../vue-loader/lib/index.js??vue-loader-options!./BeatLoader.vue?vue&type=script&lang=js& */ "./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=script&lang=js&");
+ /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_0__.default); 
+
+/***/ }),
+
+/***/ "./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=template&id=37a98790&":
+/*!************************************************************************************!*\
+  !*** ./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=template&id=37a98790& ***!
+  \************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "render": () => (/* reexport safe */ _vue_loader_lib_loaders_templateLoader_js_vue_loader_options_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_template_id_37a98790___WEBPACK_IMPORTED_MODULE_0__.render),
+/* harmony export */   "staticRenderFns": () => (/* reexport safe */ _vue_loader_lib_loaders_templateLoader_js_vue_loader_options_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_template_id_37a98790___WEBPACK_IMPORTED_MODULE_0__.staticRenderFns)
+/* harmony export */ });
+/* harmony import */ var _vue_loader_lib_loaders_templateLoader_js_vue_loader_options_vue_loader_lib_index_js_vue_loader_options_BeatLoader_vue_vue_type_template_id_37a98790___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! -!../../vue-loader/lib/loaders/templateLoader.js??vue-loader-options!../../vue-loader/lib/index.js??vue-loader-options!./BeatLoader.vue?vue&type=template&id=37a98790& */ "./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=template&id=37a98790&");
+
+
+/***/ }),
+
+/***/ "./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=template&id=37a98790&":
+/*!***************************************************************************************************************************************************************************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/loaders/templateLoader.js??vue-loader-options!./node_modules/vue-loader/lib/index.js??vue-loader-options!./node_modules/vue-spinner/src/BeatLoader.vue?vue&type=template&id=37a98790& ***!
+  \***************************************************************************************************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "render": () => (/* binding */ render),
+/* harmony export */   "staticRenderFns": () => (/* binding */ staticRenderFns)
+/* harmony export */ });
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "div",
+    {
+      directives: [
+        {
+          name: "show",
+          rawName: "v-show",
+          value: _vm.loading,
+          expression: "loading"
+        }
+      ],
+      staticClass: "v-spinner"
+    },
+    [
+      _c("div", { staticClass: "v-beat v-beat-odd", style: _vm.spinnerStyle }),
+      _c("div", { staticClass: "v-beat v-beat-even", style: _vm.spinnerStyle }),
+      _c("div", { staticClass: "v-beat v-beat-odd", style: _vm.spinnerStyle })
+    ]
+  )
+}
+var staticRenderFns = []
+render._withStripped = true
+
+
+
+/***/ }),
+
+/***/ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/vue-loader/lib/runtime/componentNormalizer.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ normalizeComponent)
+/* harmony export */ });
+/* globals __VUE_SSR_CONTEXT__ */
+
+// IMPORTANT: Do NOT use ES2015 features in this file (except for modules).
+// This module is a runtime utility for cleaner component module output and will
+// be included in the final webpack user bundle.
+
+function normalizeComponent (
+  scriptExports,
+  render,
+  staticRenderFns,
+  functionalTemplate,
+  injectStyles,
+  scopeId,
+  moduleIdentifier, /* server only */
+  shadowMode /* vue-cli only */
+) {
+  // Vue.extend constructor export interop
+  var options = typeof scriptExports === 'function'
+    ? scriptExports.options
+    : scriptExports
+
+  // render functions
+  if (render) {
+    options.render = render
+    options.staticRenderFns = staticRenderFns
+    options._compiled = true
+  }
+
+  // functional template
+  if (functionalTemplate) {
+    options.functional = true
+  }
+
+  // scopedId
+  if (scopeId) {
+    options._scopeId = 'data-v-' + scopeId
+  }
+
+  var hook
+  if (moduleIdentifier) { // server build
+    hook = function (context) {
+      // 2.3 injection
+      context =
+        context || // cached call
+        (this.$vnode && this.$vnode.ssrContext) || // stateful
+        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
+      // 2.2 with runInNewContext: true
+      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
+        context = __VUE_SSR_CONTEXT__
+      }
+      // inject component styles
+      if (injectStyles) {
+        injectStyles.call(this, context)
+      }
+      // register component module identifier for async chunk inferrence
+      if (context && context._registeredComponents) {
+        context._registeredComponents.add(moduleIdentifier)
+      }
+    }
+    // used by ssr in case component is cached and beforeCreate
+    // never gets called
+    options._ssrRegister = hook
+  } else if (injectStyles) {
+    hook = shadowMode
+      ? function () {
+        injectStyles.call(
+          this,
+          (options.functional ? this.parent : this).$root.$options.shadowRoot
+        )
+      }
+      : injectStyles
+  }
+
+  if (hook) {
+    if (options.functional) {
+      // for template-only hot-reload because in that case the render fn doesn't
+      // go through the normalizer
+      options._injectStyles = hook
+      // register for functional component in vue file
+      var originalRender = options.render
+      options.render = function renderWithStyleInjection (h, context) {
+        hook.call(context)
+        return originalRender(h, context)
+      }
+    } else {
+      // inject component registration as beforeCreate hook
+      var existing = options.beforeCreate
+      options.beforeCreate = existing
+        ? [].concat(existing, hook)
+        : [hook]
+    }
+  }
+
+  return {
+    exports: scriptExports,
+    options: options
+  }
+}
+
 
 /***/ }),
 
@@ -15681,7 +17590,7 @@ Vue.compile = compileToFunctions;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
+/******/ 			id: moduleId,
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};

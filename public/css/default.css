@@ -874,3 +874,12 @@ span.loading {
   font-family: cursive;
   margin-top: 5px;
 }
+
+[v-cloak]{
+  display: none;
+}
+
+button:disabled{
+  background-color: #424651;
+  color: white;
+}

@@ -100,7 +100,7 @@
         <!-- End Main -->
     </div>
 
-    <div class="container-fluid h-full" id="index">
+    <div class="container-fluid h-screen" id="index" v-cloak>
         <div class="top-container">
             <div class="top">
                 <div class="row">
@@ -116,12 +116,11 @@
                 <div class="row">
                     <span class="arrow-down"></span>
                 </div>
-                
                 {{-- call buttons here  --}}
                 <div class="grid grid-cols-1 md:grid-cols-{{ (count($webphones) > 3 ) ? 3 : count($webphones) }} gap-4 justify-center mx-auto max-w-md">
                     @foreach ($webphones as $webphone)
                     <div class="row btn-container">
-                        <button class="btn-call" id="btn_call" v-on:click="doSome">
+                        <button class="btn-call" :disabled="status.showAnimate" v-on:click="dial('{{$webphone->callerId}}' , '{{$webphone->name}}')" >
                             <span>{{$webphone->name}}</span>
                         </button>
                     </div>
@@ -129,25 +128,29 @@
                 </div>
 
                 {{-- status navigation here --}}
-                <div class="animate__animated animate__fadeOutUp flex justify-center mx-auto max-w-md mr-auto bg-gray-600 text-white p-5 rounded-md mt-4">
-                    Calling to Administrator...
+
+                <div v-if="status.show" class="flex mx-auto max-w-md mr-auto bg-gray-600 text-white p-5 rounded-md mt-4" :class="{ 'animate__animated animate__backInLeft' : status.showAnimate , 'animate__animated animate__backOutLeft' : !status.showAnimate  }">
+                    <span class="flex">
+                        {{-- description like calling to administrator... --}}
+                        <span class="mr-2" v-html="status.description"></span>
+                        <span class="mr-2" v-html="status.spekingTime"></span>
+                        {{-- loader  --}}
+                        <beat-loader :loading="status.spinnerLoading" :color="status.spinnerColor" :size="status.spinnerSize"></beat-loader>
+                    </span>
+                    <button v-on:click="endCall" class="bg-red-600 rounded-md p-3 absolute inset-y-0 right-0 hover:bg-red-500">End Call</button>
                 </div>
                 
-                <div class="row">
+                {{-- <div class="row">
                     <small id="speaking"></small>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
-
     <!-- Debug Output -->
     <pre id="debug"></pre>
 
     <!-- variables to pass vici_phone.js -->
     <script>
-        //------- VOIPIRAN Support Caller id ------
-        var voipiran_sid = 3007;
-
         // SIP configuration variables
         var cid_name  = {{ env('CID_NAME') }};
         var sip_uri   = "{{ env('SIP_URI') }}";
@@ -208,8 +211,9 @@
 
     <!-- Translations file -->
     <script src="js/translations.js"></script>
-
-    <script src="js/webphone.js"></script>
+    
+    {{-- vue stuff here  --}}
+    <script src="{{asset('js/index.js')}}"></script>
 </body>
 
 </html>
