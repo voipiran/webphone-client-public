@@ -24,18 +24,18 @@ __webpack_require__.r(__webpack_exports__);
 
 var voipiran_sid;
 var vm = new vue__WEBPACK_IMPORTED_MODULE_2__.default({
-  el: '#index',
+  el: "#index",
   data: {
     status: {
-      show: false,
-
+      show: false
       /** to not show the first animation we have to not show the div */
+      ,
       showAnimate: false,
-      spinnerColor: 'white',
-      spinnerSize: '7px',
-      description: null,
-
+      spinnerColor: "white",
+      spinnerSize: "7px",
+      description: null
       /** like 'calling to administrator...' */
+      ,
       spinnerLoading: true,
       spekingTime: null
     },
@@ -48,22 +48,51 @@ var vm = new vue__WEBPACK_IMPORTED_MODULE_2__.default({
        * so we have to showStatus anyway
        */
       this.spinnerLoading = true;
-      this.status.description = 'Wait , we are making call with ' + name;
+      this.status.description = "Wait , we are making call with " + name;
       this.status.show = true;
       this.status.showAnimate = this.status.showAnimate ? false : true;
       this.name = name;
       voipiran_sid = dialTo;
-      /** 
-       * make the call 
+      /**
+       * make the call
        * the dialButton will make the call
        * */
 
       dialButton();
     },
     endCall: function endCall() {
-      this.status.description = 'Ready to call';
+      this.status.description = "Ready to call";
       vm.$data.status.showAnimate = false;
-      hangupCall();
+      /**
+       * before disconnect the call we have to detect the call status
+       */
+
+      switch (my_session.status) {
+        /**
+         * before call made
+         * or
+         * phone is ringing other side
+         * */
+        case 0:
+        case 2:
+          endAudio.pause();
+          endAudio.currentTime = 0;
+          ringAudio.pause();
+          ringAudio.currentTime = 0;
+          my_session.cancel();
+          break;
+
+        /**we are inCall  */
+
+        case 12:
+          my_session.bye();
+          break;
+      }
+
+      my_session = false;
+      ringing = false;
+      incall = false; // handleBye();
+
       this.status.showAnimate = false;
     }
   },
@@ -79,7 +108,8 @@ var voipIranRegiterButton = document.getElementById("register");
 var voipIranUnRegiterButton = document.getElementById("unregister");
 var voipIranRegStatus = document.getElementById("reg_status");
 var voipIranDialCall = document.getElementById("dial");
-var translated_message; // let voipIranBtnToggle = parent.document.getElementById("btnToggle");
+var translated_message;
+var options; // let voipIranBtnToggle = parent.document.getElementById("btnToggle");
 // let voipIranVici = parent.document.getElementById("vici");
 
 /* =================== VoipIran ===================== --> */
@@ -581,24 +611,24 @@ function dialNumber() {
   // assign event handlers to the session
 
   my_session.on("accepted", function () {
-    vm.$data.status.description = 'Incall with ' + vm.$data.name;
+    vm.$data.status.description = "Incall with " + vm.$data.name;
     handleAccepted();
   });
   my_session.on("bye", function (request) {
-    vm.$data.status.description = 'Ready to call';
+    vm.$data.status.description = "Ready to call";
     vm.$data.status.showAnimate = false;
     handleBye(request);
   });
   my_session.on("failed", function (response, cause) {
-    vm.$data.status.description = 'Ready to call';
+    vm.$data.status.description = "Ready to call";
     vm.$data.status.showAnimate = false;
 
-    if (cause == 'WebRTC Error') {
-      handleFailed(response, 'Canceled');
+    if (cause == "WebRTC Error") {
+      handleFailed(response, "Canceled");
       Toast.fire({
-        text: 'Canceled!',
+        text: "Canceled!",
         timer: 1500,
-        icon: 'info',
+        icon: "info",
         showConfirmButton: false
       });
       return;
@@ -607,12 +637,12 @@ function dialNumber() {
     handleFailed(response, cause);
   });
   my_session.on("refer", function () {
-    vm.$data.status.description = 'Ready to call';
+    vm.$data.status.description = "Ready to call";
     vm.$data.status.showAnimate = false;
     handleInboundRefer();
   });
   my_session.on("progress", function (progress) {
-    vm.$data.status.description = vm.$data.name + ' Ringing';
+    vm.$data.status.description = vm.$data.name + " Ringing";
     handleProgress(progress);
   }); // uiElements.digits.value = "";
 }
@@ -820,7 +850,7 @@ function handleInboundRefer() {
 }
 
 function WebRTCError() {
-  Toast.fire('Error!', get_translation("webrtc_error"), 'error');
+  Toast.fire("Error!", get_translation("webrtc_error"), "error");
 }
 
 function initialize() {
