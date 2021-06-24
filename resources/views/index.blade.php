@@ -129,7 +129,7 @@
                     @foreach ($webphones as $webphone)
                     <div class="row btn-container">
                         <button class="btn-call" :disabled="status.showAnimate" v-on:click="dial('{{$webphone->callerId}}' , '{{$webphone->name}}')" >
-                            <span>{{$webphone->name}}</span>
+                            <span class="font-yekan">{{$webphone->name}}</span>
                         </button>
                     </div>
                     @endforeach
