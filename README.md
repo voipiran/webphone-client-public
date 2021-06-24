@@ -6,10 +6,8 @@ built with laravel `8.26.1`
 
 ## Usage
 - clone repository
-- cp .env.example .env
-- config database in `.env` 
-- `php artisan migrate --seed`
-- `php artisan serve`
+- change `.env` file configuration base on your enviroment
+- done.
 
 # Just For Developers
 > `vendor` forlder removed from `.gitignore` for easy installation on shared hostings.
