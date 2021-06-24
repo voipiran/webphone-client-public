@@ -5,9 +5,11 @@ built with laravel `8.26.1`
 - `php >= 7.3`
 
 ## Usage
-- clone repository
-- change `.env` file configuration base on your enviroment
+- put the `public` content folder in `public_html` and other file and folders in a folder before that.
+- create a database and import `.sql` in the root folder.
+- config the database and webphone customer settings in `.env` file.
 - done.
+> for more help you can watch the `installtionOnCpanel.mp4 `video that is in root folder and remove it after that.
 
 # Just For Developers
 > `vendor` forlder removed from `.gitignore` for easy installation on shared hostings.
