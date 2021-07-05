@@ -23,7 +23,7 @@
             </x-slot>
 
             {{-- content => webphones Grid  --}}
-            <x-webphones.webphone-grid></x-webphones.webphone-grid>
+            <x-webphone-grid></x-webphone-grid>
             
         </x-card>
 

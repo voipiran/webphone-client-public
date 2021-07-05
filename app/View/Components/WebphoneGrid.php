@@ -1,6 +1,6 @@
 <?php
 
-namespace App\View\Components\webphones;
+namespace App\View\Components;
 
 use App\Models\Webphone;
 use Illuminate\View\Component;
