@@ -11,11 +11,10 @@
                 <div class="p-6 bg-white border-b border-gray-200">
                     <span class="mb-5">@lang('Webphone Settings:')</span>
                     <hr  class="mb-3">                    
-                    CID NAME = {{env('CID_NAME')}} <br>
-                    SIP URI = {{env('SIP_URI')}} <br>
-                    AUTH USER = {{env('AUTH_USER')}} <br>
-                    PASSWORD = {{env('PASSWORD')}} <br>
-                    WS SERVER = {{env('WS_SERVER')}} <br>
+                    WssServer = {{config('app.WssServer')}} <br>
+                    WebSocketPort = {{config('app.WebSocketPort')}} <br>
+                    SipUsername = {{config('app.SipUsername')}} <br>
+                    SipPassword = {{config('app.SipPassword')}} <br>
                     
                     <x-alert type="success">
                         You can change this settings in .env file in root.

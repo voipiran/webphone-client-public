@@ -229,4 +229,9 @@ return [
 
     ],
 
+    /**VOIPIRAN CONFIGS */
+    'WssServer'    => env('WssServer', '192.168.1.61'),
+    'WebSocketPort' => env('WebSocketPort', 8089),
+    'SipUsername'   => env('SipUsername', 3007),
+    'SipPassword'   => env('SipPassword', "pass3007"),
 ];
