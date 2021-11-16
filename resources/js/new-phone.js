@@ -395,7 +395,7 @@ new Vue({
 
         /**make call and ... */
         audioCall(dialNumber = 2222, name = 'some') {
-            let lineObj = { LineNumber: "3007", SipSession: null }
+            let lineObj = { LineNumber: dialNumber , SipSession: null }
 
             /**make this instance */
             let ts = this
