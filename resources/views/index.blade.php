@@ -108,7 +108,7 @@
                 </div>
             </div>
             <div class="bottom-container">
-                <div class="bottom">
+                <div class="bottom" v-if="isReRegister === true">
                     <div class="row">
                         <span class="arrow-down"></span>
                     </div>
@@ -147,6 +147,16 @@
                     {{-- <div class="row">
                     <small id="speaking"></small>
                 </div> --}}
+                </div>
+
+                {{-- loading  --}}
+                <div class="bottom" v-if="isReRegister == 'loading'">
+                    <beat-loader :loading="status.spinnerLoading" :color="status.spinnerColor" :size="status.spinnerSize"></beat-loader>
+                </div>
+
+                {{-- registration failed  --}}
+                <div class="bottom" v-if="isReRegister === false">
+                    Registration Failed Please Contact Administrator
                 </div>
             </div>
         </div>
