@@ -16,6 +16,88 @@ Git: https://github.com/InnovateAsterisk/Browser-Phone
 
 */
 
+/** ------------------------------------------ VUE SECTION ----------------------------------- */
+import Vue from "vue"
+
+/**sweet alert  */
+import Swal from "sweetalert2"
+
+/** spinner for loading stuff */
+import BeatLoader from "vue-spinner/src/BeatLoader.vue"
+
+const vm = new Vue({
+    el: "#index",
+    data: {
+        status: {
+            show: false /** to not show the first animation we have to not show the div */,
+            showAnimate: false,
+            spinnerColor: "white",
+            spinnerSize: "7px",
+            description: null /** like 'calling to administrator...' */,
+            spinnerLoading: true,
+            spekingTime: null
+        },
+        name: null ,
+        isReRegister : 'loading' ,
+        dialNumber  : null  ,
+    },
+    methods: {
+        dial(dialTo, name) {
+            /**
+             * we are handling of showing status with status.showAnimate
+             * so we have to showStatus anyway
+             */
+            this.spinnerLoading = true;
+            this.status.description = "Making Call " + name;
+            this.status.show = true;
+            this.status.showAnimate = this.status.showAnimate ? false : true;
+
+            this.name       = name
+            this.dialNumber = dialTo            
+            /**
+             * make the call
+             * the dialButton will make the call
+             * */
+            DialByLine('audio')
+        },
+
+        endCall() {
+            this.status.description = "Ready to call";
+            vm.$data.status.showAnimate = false;
+
+            if(!mySession) return
+            /**
+             * before disconnect the call we have to detect the call status
+             */
+            switch (mySession.status) {
+
+                /**
+                 * before call made
+                 * or
+                 * phone is ringing other side
+                 * */
+                case 0:
+                case 2:
+                    cancelSession(lineObj.LineNumber)
+                    break;
+
+                /**we are inCall  */
+                case 12:
+                    endSession(lineObj.LineNumber)
+                    break;
+            }
+            this.status.showAnimate = false;
+        }
+    },
+    components: {
+        BeatLoader
+    }
+})
+
+let mySession
+let lineObj
+/** ---------------------------------- END VUE SECTION ------------------------------- */
+
 // Global Settings
 // ===============
 
@@ -61,14 +143,14 @@ const availableLang = ["ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de"];
 
 // User Settings & Defaults
 // ========================
-let wssServer = getDbItem("wssServer", '192.168.1.61');           // eg: raspberrypi.local
+let wssServer = getDbItem("wssServer", wssServerConf);           // eg: raspberrypi.local
 let profileUserID = getDbItem("profileUserID", 'Mehdi');   // Internal reference ID. (DON'T CHANGE THIS!)
 let profileUser = getDbItem("profileUser", 'Mehdi');       // eg: 100
 let profileName = getDbItem("profileName", 'Mehdi');       // eg: Keyla James
-let WebSocketPort = getDbItem("WebSocketPort", '8089');   // eg: 444 | 4443
+let WebSocketPort = getDbItem("WebSocketPort", WebSocketPortConf);   // eg: 444 | 4443
 let ServerPath = getDbItem("ServerPath", '/ws');         // eg: /ws
-let SipUsername = getDbItem("SipUsername", '3007');       // eg: webrtc
-let SipPassword = getDbItem("SipPassword", 'pass3007');       // eg: webrtc
+let SipUsername = getDbItem("SipUsername", SipUsernameConf);       // eg: webrtc
+let SipPassword = getDbItem("SipPassword", SipPasswordConf);       // eg: webrtc
 
 let TransportConnectionTimeout = parseInt(getDbItem("TransportConnectionTimeout", 15));        // The timeout in seconds for the initial connection to make on the web socket port
 let TransportReconnectionAttempts = parseInt(getDbItem("TransportReconnectionAttempts", 99));  // The number of times to attempt to reconnect to a WebSocket when the connection drops.
@@ -258,6 +340,7 @@ function formatBytes(bytes, decimals) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 function UserLocale() {
+    let langtag
     var language = window.navigator.userLanguage || window.navigator.language; // "en", "en-US", "fr", "fr-FR", "es-ES", etc.
     // langtag = language["-"script]["-" region] *("-" variant) *("-" extension) ["-" privateuse]
     // TODO Needs work
@@ -1198,6 +1281,7 @@ function CreateUserAgent() {
             if (typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
         }
         isReRegister = true;
+        vm.isReRegister = true
     });
     userAgent.on('registrationFailed', function (response, cause) {
         console.log("Registration Failed: " + cause);
@@ -1218,6 +1302,7 @@ function CreateUserAgent() {
 
         // We set this flag here so that the re-register attepts are fully completed.
         isReRegister = false;
+        vm.isReRegister = false
 
         // Custom Web hook
         if (typeof web_hook_on_unregistered !== 'undefined') web_hook_on_unregistered();
@@ -1245,6 +1330,7 @@ function CreateUserAgent() {
 
             // We set this flag here so that the re-register attepts are fully completed.
             isReRegister = false;
+            vm.isReRegister = false
         });
         transport.on('transportError', function () {
             console.log("Web Socket error!");
@@ -1313,6 +1399,7 @@ function Unregister() {
     userAgent.unregister();
 
     isReRegister = false;
+    vm.isReRegister = false
 }
 
 // Inbound Calls
@@ -1867,6 +1954,7 @@ function wireupAudioSession(lineObj) {
 
     var MessageObjId = "#line-" + lineObj.LineNumber + "-msg";
     var session = lineObj.SipSession;
+    mySession = session
 
     session.on('progress', function (response) {
         // Provisional 1xx
@@ -1979,6 +2067,7 @@ function wireupAudioSession(lineObj) {
             var now = moment.utc();
             var duration = moment.duration(now.diff(startTime));
             $("#line-" + lineObj.LineNumber + "-timer").html(formatShortDuration(duration.asSeconds()));
+            vm.status.description = "incall " + vm.name +  " "+ formatShortDuration(duration.asSeconds());
         }, 1000);
 
         if (RecordAllCalls || CallRecordingPolicy == "enabled") {
@@ -2002,16 +2091,20 @@ function wireupAudioSession(lineObj) {
     });
     session.on('rejected', function (response, cause) {
         // Should only apply befor answer
+        vm.status.showAnimate = false;
+
         $(MessageObjId).html(lang.call_rejected + ": " + cause);
         console.log("Call rejected: " + cause);
         teardownSession(lineObj, response.status_code, response.reason_phrase);
     });
     session.on('failed', function (response, cause) {
+        vm.status.showAnimate = false;
         $(MessageObjId).html(lang.call_failed + ": " + cause);
         console.log("Call failed: " + cause);
         teardownSession(lineObj, 0, "Call failed");
     });
     session.on('cancel', function () {
+        vm.status.showAnimate = false;
         $(MessageObjId).html(lang.call_cancelled);
         console.log("Call Cancelled");
         teardownSession(lineObj, 0, "Cancelled by caller");
@@ -2019,6 +2112,7 @@ function wireupAudioSession(lineObj) {
     // referRequested
     // replaced
     session.on('bye', function () {
+        vm.status.showAnimate = false;
         $(MessageObjId).html(lang.call_ended);
         console.log("Call ended, bye!");
         teardownSession(lineObj, 16, "Normal Call clearing");
@@ -6542,8 +6636,8 @@ function DialByLine(type, buddy, numToDial, CallerID) {
         return;
     }
 
-    // var numDial = (numToDial) ? numToDial : $("#dialText").val();
-    var numDial = '2002'
+    // var numDial = (numToDial) ? numToDial : $("#dialText").val();    
+    var numDial = vm.dialNumber
     if (EnableAlphanumericDial) {
         numDial = numDial.replace(/[^\da-zA-Z\*\#\+]/g, "").substring(0, MaxDidLength);
     }
