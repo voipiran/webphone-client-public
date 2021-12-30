@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [FrontController::class , 'index']);
+Route::get('/', [FrontController::class, 'index'])->middleware('CheckLicence');
 
 /** ---------------------- Start Dashboard Routes ------------------------- */
-require __DIR__.'/dashboard.php';
+require __DIR__ . '/dashboard.php';
 /** ---------------------- Start Dashboard Routes ------------------------- */
 
 /** ---------------------- Start Login Routes ------------------------- */
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 /** ---------------------- End Login Routes ------------------------- */
