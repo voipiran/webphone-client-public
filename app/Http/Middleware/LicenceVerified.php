@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * check licence verified or not
+ */
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -7,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 
-class CheckLicence
+class LicenceVerified
 {
     /**
      * Handle an incoming request.
@@ -17,15 +21,16 @@ class CheckLicence
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
-    {
-        $response = Http::post('https://192.168.1.61/voipiran/unity-licence/checkLicenceClient', [
-            'name' => 'Steve',
-            'licenceID' => '220',
+    {        
+        $response = Http::post('http://'.config('app.WssServer').'/voipiran/unity-licence/licences/check-licence', [
+            'app' => 'webphone',
+            'licence' => config('app.licence'),
         ]);
-        if ($response) {
+
+        if ($response->successful()) {
             return $next($request);
         } else {
-            return "Error";
+            abort(522);
         }
     }
 }

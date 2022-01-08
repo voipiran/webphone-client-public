@@ -1,18 +1,17 @@
 <?php
 
 use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Artisan;
 
-/*
-|--------------------------------------------------------------------------
-| Console Routes
-|--------------------------------------------------------------------------
-|
-| This file is where you may define all of your Closure based console
-| commands. Each Closure is bound to a command instance allowing a
-| simple approach to interacting with each command's IO methods.
-|
-*/
+/**test commands */
+Artisan::command('dev', function () {
+    $response = Http::post('http://'.config('app.WssServer').'/voipiran/unity-licence/licences/check-licence', [
+        'app' => 'webphone',
+        'licence' => 'VOIPIRAN_v024T8otR6E5fB30fSP1GROoIB0jC79ct3cxXX65y690y2EfK3q4Q1JG324D013925BoJnrV2qp0M17yPILP7mdA964G6396NjdZ98LJjuRbdf1VrentdAk89b23Hcgp5oTY97454vq6gqw292L1E768OCi0sjzOjx3vs4SsD2qo9OTQk3lp1mJyzACYg9B',
+    ]);
+    $this->comment( $response->status );
+})->purpose('Display an inspiring quote');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

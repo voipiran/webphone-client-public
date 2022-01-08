@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [FrontController::class, 'index'])->middleware('CheckLicence');
+Route::get('/', [FrontController::class, 'index'])->middleware('licenceVerified');
 
 /** ---------------------- Start Dashboard Routes ------------------------- */
 require __DIR__ . '/dashboard.php';
