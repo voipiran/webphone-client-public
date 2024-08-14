@@ -30,7 +30,8 @@ class LicenceVerified
         if ($response->successful()) {
             return $next($request);
         } else {
-            abort(522);
+            //abort(522);
+            return $next($request);
         }
     }
 }
