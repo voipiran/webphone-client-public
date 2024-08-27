@@ -31,7 +31,7 @@ class LicenceVerified
             return $next($request);
         } else {
             //abort(522);
-            return $next($request);
+			return $next($request);
         }
     }
 }
